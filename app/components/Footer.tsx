@@ -56,7 +56,10 @@ export default function Footer() {
               {[
                 ['Tư vấn nông nghiệp', '/san-pham?category=tu-van'],
                 ['Phân tích – kiểm nghiệm', '/san-pham?category=phan-tich'],
-                ['Đào tạo – chuyển giao CN', '/san-pham?category=dao-tao'],
+                [
+                  'Đào tạo – chuyển giao công nghệ',
+                  '/san-pham?category=dao-tao',
+                ],
                 ['──', ''],
                 ['Giống cây trồng', '/san-pham?category=giong-cay-trong'],
                 ['Giống vật nuôi – TS', '/san-pham?category=giong-vat-nuoi'],
@@ -74,7 +77,7 @@ export default function Footer() {
                       {label}
                     </Link>
                   </li>
-                )
+                ),
               )}
             </ul>
           </div>

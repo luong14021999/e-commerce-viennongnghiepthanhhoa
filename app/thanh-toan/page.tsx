@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
+import { useRouter } from "next/navigation";
 import { useCart } from "@/app/context/CartContext";
 import { useAuth } from "@/app/context/AuthContext";
 import { formatPrice } from "@/app/lib/data";
@@ -21,8 +22,14 @@ type Step = "info" | "payment" | "success";
 
 export default function CheckoutPage() {
   const { items, totalPrice, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
 
+  useEffect(() => {
+    if (!isLoading && user?.role !== "buyer") {
+      router.replace("/dang-nhap?redirect=/thanh-toan");
+    }
+  }, [user, isLoading, router]);
 
   const [step, setStep] = useState<Step>("info");
   const [paymentMethod, setPaymentMethod] = useState("cod");

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCart } from '@/app/context/CartContext';
 import { useAuth } from '@/app/context/AuthContext';
 import { categories } from '@/app/lib/data';
@@ -16,6 +16,8 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   function handleSearch(e: { preventDefault(): void }) {
     e.preventDefault();
@@ -52,27 +54,31 @@ export default function Header() {
 
       {/* Main header */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {' '}
         <div className="flex items-center gap-2 sm:gap-4 py-3 sm:py-2">
-          {/* Logo */}
+          {' '}
+          {/* Logo */}{' '}
           <Link
             href="/"
             className="flex items-center gap-3 flex-shrink-0 group"
           >
+            {' '}
             <Image
               src="/thanh_hoa_agriculture_logo.png"
               alt="Viện Nông Nghiệp Thanh Hóa"
-              width={120}
-              height={120}
+              width={140}
+              height={140}
               className="flex-shrink-0 object-contain w-10 h-10 sm:w-16 sm:h-16"
             />
             <div className="leading-tight">
               <div className="text-base sm:text-2xl font-extrabold text-green-800 uppercase tracking-wide">
                 Viện Nông Nghiệp
               </div>
-              <div className="text-sm sm:text-xl font-bold text-green-600">Thanh Hóa</div>
+              <div className="text-sm sm:text-xl font-bold text-green-600">
+                Thanh Hóa
+              </div>
             </div>
           </Link>
-
           {/* Search */}
           <form
             onSubmit={handleSearch}
@@ -107,7 +113,6 @@ export default function Header() {
               </button>
             </div>
           </form>
-
           {/* Right actions */}
           <div className="flex items-center gap-2 ml-auto sm:ml-0 flex-shrink-0">
             {/* Cart */}
@@ -130,7 +135,7 @@ export default function Header() {
                     d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
                   />
                 </svg>
-                {totalItems > 0 && (
+                {mounted && totalItems > 0 && (
                   <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                     {totalItems > 9 ? '9+' : totalItems}
                   </span>
@@ -357,7 +362,6 @@ export default function Header() {
             </button>
           </div>
         </div>
-
         {/* Mobile search */}
         <div className="sm:hidden pb-3">
           <form onSubmit={handleSearch} className="flex">
@@ -400,47 +404,61 @@ export default function Header() {
             <Link
               href="/san-pham"
               className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
-                pathname === '/san-pham' ? 'border-green-600 text-green-700' : 'border-transparent text-gray-600 hover:text-green-700 hover:border-green-300'
+                pathname === '/san-pham'
+                  ? 'border-green-600 text-green-700'
+                  : 'border-transparent text-gray-600 hover:text-green-700 hover:border-green-300'
               }`}
             >
               🛒 Tất cả
             </Link>
             <span className="w-px h-5 bg-gray-200 flex-shrink-0" />
-            <span className="text-xs text-blue-500 font-semibold px-1 whitespace-nowrap flex-shrink-0">Dịch vụ</span>
-            {categories.filter(c => c.type === 'service').map(cat => (
-              <Link
-                key={cat.id}
-                href={`/san-pham?category=${cat.id}`}
-                className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
-                  pathname.includes('san-pham') &&
-                  typeof window !== 'undefined' &&
-                  new URLSearchParams(window.location.search).get('category') === cat.id
-                    ? 'border-blue-600 text-blue-700'
-                    : 'border-transparent text-gray-600 hover:text-blue-700 hover:border-blue-300'
-                }`}
-              >
-                <span>{cat.icon}</span>
-                {cat.label}
-              </Link>
-            ))}
+            <span className="text-xs text-blue-500 font-semibold px-1 whitespace-nowrap flex-shrink-0">
+              Dịch vụ
+            </span>
+            {categories
+              .filter(c => c.type === 'service')
+              .map(cat => (
+                <Link
+                  key={cat.id}
+                  href={`/san-pham?category=${cat.id}`}
+                  className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
+                    pathname.includes('san-pham') &&
+                    typeof window !== 'undefined' &&
+                    new URLSearchParams(window.location.search).get(
+                      'category',
+                    ) === cat.id
+                      ? 'border-blue-600 text-blue-700'
+                      : 'border-transparent text-gray-600 hover:text-blue-700 hover:border-blue-300'
+                  }`}
+                >
+                  <span>{cat.icon}</span>
+                  {cat.label}
+                </Link>
+              ))}
             <span className="w-px h-5 bg-gray-200 flex-shrink-0" />
-            <span className="text-xs text-green-600 font-semibold px-1 whitespace-nowrap flex-shrink-0">Sản phẩm</span>
-            {categories.filter(c => c.type === 'product').map(cat => (
-              <Link
-                key={cat.id}
-                href={`/san-pham?category=${cat.id}`}
-                className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
-                  pathname.includes('san-pham') &&
-                  typeof window !== 'undefined' &&
-                  new URLSearchParams(window.location.search).get('category') === cat.id
-                    ? 'border-green-600 text-green-700'
-                    : 'border-transparent text-gray-600 hover:text-green-700 hover:border-green-300'
-                }`}
-              >
-                <span>{cat.icon}</span>
-                {cat.label}
-              </Link>
-            ))}
+            <span className="text-xs text-green-600 font-semibold px-1 whitespace-nowrap flex-shrink-0">
+              Sản phẩm
+            </span>
+            {categories
+              .filter(c => c.type === 'product')
+              .map(cat => (
+                <Link
+                  key={cat.id}
+                  href={`/san-pham?category=${cat.id}`}
+                  className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
+                    pathname.includes('san-pham') &&
+                    typeof window !== 'undefined' &&
+                    new URLSearchParams(window.location.search).get(
+                      'category',
+                    ) === cat.id
+                      ? 'border-green-600 text-green-700'
+                      : 'border-transparent text-gray-600 hover:text-green-700 hover:border-green-300'
+                  }`}
+                >
+                  <span>{cat.icon}</span>
+                  {cat.label}
+                </Link>
+              ))}
           </div>
         </div>
       </div>
@@ -448,33 +466,45 @@ export default function Header() {
       {/* Mobile nav menu */}
       {mobileMenuOpen && (
         <div className="sm:hidden bg-white border-t border-gray-200 py-2">
-          <Link href="/san-pham" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700">
+          <Link
+            href="/san-pham"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700"
+          >
             🛒 Tất cả
           </Link>
-          <p className="px-4 pt-2 pb-1 text-xs text-blue-500 font-semibold uppercase">Dịch vụ</p>
-          {categories.filter(c => c.type === 'service').map(cat => (
-            <Link
-              key={cat.id}
-              href={`/san-pham?category=${cat.id}`}
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700"
-            >
-              <span>{cat.icon}</span>
-              {cat.label}
-            </Link>
-          ))}
-          <p className="px-4 pt-2 pb-1 text-xs text-green-600 font-semibold uppercase">Sản phẩm</p>
-          {categories.filter(c => c.type === 'product').map(cat => (
-            <Link
-              key={cat.id}
-              href={`/san-pham?category=${cat.id}`}
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700"
-            >
-              <span>{cat.icon}</span>
-              {cat.label}
-            </Link>
-          ))}
+          <p className="px-4 pt-2 pb-1 text-xs text-blue-500 font-semibold uppercase">
+            Dịch vụ
+          </p>
+          {categories
+            .filter(c => c.type === 'service')
+            .map(cat => (
+              <Link
+                key={cat.id}
+                href={`/san-pham?category=${cat.id}`}
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+              >
+                <span>{cat.icon}</span>
+                {cat.label}
+              </Link>
+            ))}
+          <p className="px-4 pt-2 pb-1 text-xs text-green-600 font-semibold uppercase">
+            Sản phẩm
+          </p>
+          {categories
+            .filter(c => c.type === 'product')
+            .map(cat => (
+              <Link
+                key={cat.id}
+                href={`/san-pham?category=${cat.id}`}
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700"
+              >
+                <span>{cat.icon}</span>
+                {cat.label}
+              </Link>
+            ))}
         </div>
       )}
     </header>

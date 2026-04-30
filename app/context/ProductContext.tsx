@@ -20,6 +20,7 @@ export type SellerProfile = {
 type ProductContextValue = {
   sellerProducts: Product[];
   sellerProfiles: Record<string, SellerProfile>;
+  isLoaded: boolean;
   submitProduct: (data: Omit<Product, "id" | "rating" | "reviews" | "sold" | "status" | "submittedAt">) => void;
   saveSellerProfile: (profile: SellerProfile) => void;
   getSellerProfile: (sellerId: string) => SellerProfile | undefined;
@@ -94,6 +95,7 @@ const DEMO_SELLER_PROFILES: Record<string, SellerProfile> = {
 export function ProductProvider({ children }: { children: React.ReactNode }) {
   const [sellerProducts, setSellerProducts] = useState<Product[]>([]);
   const [sellerProfiles, setSellerProfiles] = useState<Record<string, SellerProfile>>({});
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     try {
@@ -107,6 +109,8 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     } catch {
       setSellerProducts(DEMO_SELLER_PRODUCTS);
       setSellerProfiles(DEMO_SELLER_PROFILES);
+    } finally {
+      setIsLoaded(true);
     }
   }, []);
 
@@ -163,7 +167,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <ProductContext.Provider value={{
-      sellerProducts, sellerProfiles,
+      sellerProducts, sellerProfiles, isLoaded,
       submitProduct, saveSellerProfile, getSellerProfile,
       updateStatus, deleteProduct, getByStatus, getBySeller,
     }}>

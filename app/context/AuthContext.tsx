@@ -123,7 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { password: _pw, ...userWithoutPw } = found;
     setUser(userWithoutPw);
     localStorage.setItem("auth_user", JSON.stringify(userWithoutPw));
-    return { ok: true };
+    return { ok: true, role: userWithoutPw.role };
   }
 
   async function registerBuyer(data: BuyerRegisterData) {

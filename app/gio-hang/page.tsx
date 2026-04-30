@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/app/context/CartContext";
+import { useAuth } from "@/app/context/AuthContext";
 import { formatPrice } from "@/app/lib/data";
 
 const SHIPPING_THRESHOLD = 500000;
@@ -9,6 +11,8 @@ const SHIPPING_FEE = 30000;
 
 export default function CartPage() {
   const { items, removeFromCart, updateQuantity, clearCart, totalPrice } = useCart();
+  const { user } = useAuth();
+  const router = useRouter();
 
   const shippingFee = totalPrice >= SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
   const grandTotal = totalPrice + shippingFee;
@@ -152,12 +156,24 @@ export default function CartPage() {
                 <p className="text-xs text-gray-400 mt-1">(Đã bao gồm VAT nếu có)</p>
               </div>
 
-              <Link
-                href="/thanh-toan"
+              <button
+                onClick={() => {
+                  if (user?.role === "buyer") {
+                    router.push("/thanh-toan");
+                  } else {
+                    router.push("/dang-nhap?redirect=/thanh-toan");
+                  }
+                }}
                 className="block w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3.5 rounded-xl text-center transition-colors text-sm"
               >
-                Đặt hàng ngay ({formatPrice(grandTotal)})
-              </Link>
+                {user?.role === "buyer" ? `Đặt hàng ngay (${formatPrice(grandTotal)})` : "Đăng nhập để đặt hàng"}
+              </button>
+
+              {!user && (
+                <p className="text-xs text-center text-gray-400 mt-2">
+                  Bạn cần <Link href="/dang-nhap?redirect=/thanh-toan" className="text-green-700 font-semibold hover:underline">đăng nhập</Link> để thanh toán
+                </p>
+              )}
 
               <div className="mt-4 flex items-center justify-center gap-3 text-xs text-gray-400">
                 <span>🔒 Thanh toán an toàn</span>

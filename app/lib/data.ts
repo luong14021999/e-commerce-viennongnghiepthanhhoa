@@ -49,7 +49,7 @@ export const categories: Category[] = [
   },
   {
     id: 'dao-tao',
-    label: 'Đào tạo – chuyển giao CN',
+    label: 'Đào tạo – chuyển giao công nghệ',
     icon: '🎓',
     type: 'service',
   },

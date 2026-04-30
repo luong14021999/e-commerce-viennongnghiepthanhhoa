@@ -20,7 +20,7 @@ export default function ProductDetailClient({
   related: Product[];
 }) {
   const { addToCart } = useCart();
-  const { sellerProducts } = useProducts();
+  const { sellerProducts, isLoaded } = useProducts();
   const router = useRouter();
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
@@ -29,6 +29,12 @@ export default function ProductDetailClient({
   const product = initialProduct ?? sellerProducts.find((p) => p.id === productId) ?? null;
   const related = initialProduct ? initialRelated : sellerProducts.filter((p) => p.category === product?.category && p.id !== productId).slice(0, 4);
 
+  // Wait for localStorage to load before showing 404
+  if (!product && !isLoaded) return (
+    <div className="min-h-screen flex items-center justify-center text-gray-400">
+      <div className="animate-spin w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full" />
+    </div>
+  );
   if (!product) return notFound();
 
   // Alias so closures below see Product (not Product | null)
