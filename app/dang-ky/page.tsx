@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -10,9 +10,17 @@ import { categories } from '@/app/lib/data';
 type Role = 'buyer' | 'business';
 
 export default function RegisterPage() {
-  const { registerBuyer, registerBusiness } = useAuth();
+  const { registerBuyer, registerBusiness, user, isLoading } = useAuth();
   const router = useRouter();
   const [role, setRole] = useState<Role>('buyer');
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      if (user.role === 'business') router.replace('/dashboard');
+      else if (user.role === 'admin') router.replace('/admin');
+      else router.replace('/');
+    }
+  }, [user, isLoading, router]);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -83,7 +91,6 @@ export default function RegisterPage() {
       setError(result.error ?? 'Đăng ký thất bại');
       return;
     }
-    router.push(role === 'business' ? '/dashboard' : '/');
   }
 
   return (

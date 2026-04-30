@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -15,7 +15,7 @@ export default function LoginPage() {
 }
 
 function LoginForm() {
-  const { login } = useAuth();
+  const { login, user, isLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect') ?? '/';
@@ -24,6 +24,14 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      if (user.role === 'business') router.replace('/dashboard');
+      else if (user.role === 'admin') router.replace('/admin');
+      else router.replace(redirectTo);
+    }
+  }, [user, isLoading, router, redirectTo]);
 
   async function handleSubmit(e: { preventDefault(): void }) {
     e.preventDefault();
@@ -37,8 +45,6 @@ function LoginForm() {
     setLoading(false);
     if (!result.ok) {
       setError(result.error ?? 'Đăng nhập thất bại');
-    } else {
-      router.push(result.role === 'business' ? '/dashboard' : redirectTo);
     }
   }
 
