@@ -1,0 +1,241 @@
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { notFound } from "next/navigation";
+import type { Product } from "@/app/lib/data";
+import { formatPrice, discountPercent } from "@/app/lib/data";
+import { useCart } from "@/app/context/CartContext";
+import { useProducts } from "@/app/context/ProductContext";
+import ProductCard from "@/app/components/ProductCard";
+
+export default function ProductDetailClient({
+  product: initialProduct,
+  productId,
+  related: initialRelated,
+}: {
+  product: Product | null;
+  productId: string;
+  related: Product[];
+}) {
+  const { addToCart } = useCart();
+  const { sellerProducts } = useProducts();
+  const router = useRouter();
+  const [quantity, setQuantity] = useState(1);
+  const [added, setAdded] = useState(false);
+
+  // Fall back to seller products from context if not in base catalog
+  const product = initialProduct ?? sellerProducts.find((p) => p.id === productId) ?? null;
+  const related = initialProduct ? initialRelated : sellerProducts.filter((p) => p.category === product?.category && p.id !== productId).slice(0, 4);
+
+  if (!product) return notFound();
+
+  // Alias so closures below see Product (not Product | null)
+  const p = product;
+  const discount = discountPercent(p.originalPrice, p.price);
+
+  function handleAddToCart() {
+    addToCart(p, quantity);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
+  }
+
+  function handleBuyNow() {
+    addToCart(p, quantity);
+    router.push("/gio-hang");
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Breadcrumb */}
+      <div className="bg-white border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <nav className="text-xs text-gray-500 flex items-center gap-1 flex-wrap">
+            <Link href="/" className="hover:text-green-700">Trang chủ</Link>
+            <span>›</span>
+            <Link href="/san-pham" className="hover:text-green-700">Sản phẩm</Link>
+            <span>›</span>
+            <span className="text-gray-800 font-medium">{p.name}</span>
+          </nav>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="grid md:grid-cols-2 gap-8 mb-10">
+          {/* Product image */}
+          <div className={`${p.bg} rounded-2xl flex items-center justify-center h-72 md:h-96 relative border border-gray-200`}>
+            <span className="text-8xl md:text-9xl">{p.icon}</span>
+            {p.tag && (
+              <span className={`absolute top-4 left-4 text-sm font-bold px-3 py-1 rounded ${p.tagColor}`}>
+                {p.tag}
+              </span>
+            )}
+            {discount > 0 && (
+              <span className="absolute top-4 right-4 bg-red-500 text-white text-sm font-bold px-2.5 py-1 rounded-lg">
+                -{discount}%
+              </span>
+            )}
+          </div>
+
+          {/* Product info */}
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{p.name}</h1>
+
+            {/* Rating */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center gap-1">
+                {[1,2,3,4,5].map((s) => (
+                  <svg key={s} className={`w-4 h-4 ${s <= Math.round(p.rating) ? "text-yellow-400" : "text-gray-200"}`} fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  </svg>
+                ))}
+                <span className="text-sm font-semibold text-gray-700 ml-1">{p.rating}</span>
+              </div>
+              <span className="text-sm text-gray-500">| {p.reviews} đánh giá</span>
+              <span className="text-sm text-gray-500">| Đã bán {p.sold.toLocaleString()}</span>
+            </div>
+
+            {/* Price */}
+            <div className="bg-gray-50 rounded-xl p-4 mb-5">
+              <div className="flex items-baseline gap-3 mb-1">
+                <span className="text-3xl font-bold text-red-600">{formatPrice(p.price)}</span>
+                <span className="text-sm text-gray-500">/{p.unit}</span>
+              </div>
+              {discount > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-base text-gray-400 line-through">{formatPrice(p.originalPrice)}</span>
+                  <span className="bg-red-100 text-red-600 text-xs font-bold px-2 py-0.5 rounded">
+                    Tiết kiệm {formatPrice(p.originalPrice - p.price)}/{p.unit}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Origin & certs */}
+            <div className="mb-5 space-y-2 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500 w-24 flex-shrink-0">Xuất xứ:</span>
+                <span className="font-medium text-gray-800">{p.origin}</span>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-gray-500 w-24 flex-shrink-0">Chứng nhận:</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {p.certifications.map((c) => (
+                    <span key={c} className="bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded-full border border-green-200">
+                      ✓ {c}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Quantity */}
+            <div className="flex items-center gap-4 mb-5">
+              <span className="text-sm text-gray-600 font-medium">Số lượng:</span>
+              <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  className="w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors font-bold"
+                >
+                  −
+                </button>
+                <span className="w-12 text-center text-sm font-semibold">{quantity}</span>
+                <button
+                  onClick={() => setQuantity(quantity + 1)}
+                  className="w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors font-bold"
+                >
+                  +
+                </button>
+              </div>
+              <span className="text-sm text-gray-500">
+                Tổng: <span className="font-bold text-red-600">{formatPrice(p.price * quantity)}</span>
+              </span>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-3 flex-wrap">
+              <button
+                onClick={handleAddToCart}
+                className={`flex-1 min-w-36 py-3 rounded-xl font-semibold text-sm border-2 transition-colors ${
+                  added
+                    ? "bg-green-600 border-green-600 text-white"
+                    : "border-green-600 text-green-700 hover:bg-green-50"
+                }`}
+              >
+                {added ? "✓ Đã thêm vào giỏ!" : "Thêm vào giỏ hàng"}
+              </button>
+              <button
+                onClick={handleBuyNow}
+                className="flex-1 min-w-36 bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl font-semibold text-sm transition-colors"
+              >
+                Mua ngay
+              </button>
+            </div>
+
+            {/* Delivery note */}
+            <div className="mt-4 flex items-center gap-2 text-xs text-gray-500 bg-blue-50 rounded-lg px-3 py-2">
+              <span>🚚</span>
+              <span>Giao hàng nội thành Thanh Hóa trong 2–4 giờ. Ngoại tỉnh 3–5 ngày.</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Description + specs */}
+        <div className="grid md:grid-cols-3 gap-6 mb-10">
+          <div className="md:col-span-2 bg-white rounded-2xl border border-gray-200 p-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Mô tả sản phẩm</h2>
+            <p className="text-gray-600 leading-relaxed mb-6">{p.desc}</p>
+            <h3 className="text-base font-bold text-gray-900 mb-3">Thông số kỹ thuật</h3>
+            <ul className="space-y-2">
+              {p.specs.map((s) => (
+                <li key={s} className="flex items-center gap-2 text-sm text-gray-700">
+                  <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                  </svg>
+                  {s}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl border border-gray-200 p-5">
+              <h3 className="text-base font-bold text-gray-900 mb-3">Đảm bảo từ Viện</h3>
+              <ul className="space-y-3 text-sm">
+                {[
+                  { icon: "✅", text: "Hàng chính hãng 100%" },
+                  { icon: "🔄", text: "Đổi trả miễn phí nếu lỗi" },
+                  { icon: "🚚", text: "Giao hàng toàn tỉnh" },
+                  { icon: "📞", text: "Hỗ trợ kỹ thuật 24/7" },
+                ].map((item) => (
+                  <li key={item.text} className="flex items-center gap-2 text-gray-700">
+                    <span>{item.icon}</span>
+                    {item.text}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="bg-green-50 rounded-2xl border border-green-200 p-5">
+              <p className="text-sm font-semibold text-green-800 mb-1">Cần tư vấn thêm?</p>
+              <p className="text-xs text-green-700 mb-3">Gọi ngay để được kỹ sư hỗ trợ miễn phí</p>
+              <a href="tel:02373123456" className="block text-center bg-green-700 text-white font-bold text-sm py-2.5 rounded-xl hover:bg-green-600 transition-colors">
+                📞 0237 312 3456
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Related products */}
+        {related.length > 0 && (
+          <div>
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Sản phẩm liên quan</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {related.map((p) => <ProductCard key={p.id} product={p} />)}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
