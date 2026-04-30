@@ -28,28 +28,23 @@ export default function Header() {
     <header className="bg-white shadow-sm sticky top-0 z-50">
       {/* Top bar */}
       <div className="bg-green-700 text-white text-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-8">
-          <span className="hidden sm:block">
-            🌾 Viện Nông Nghiệp Thanh Hóa – Thành lập 1994 | Hotline:{' '}
-            <a href="tel:02373123456" className="font-semibold hover:underline">
-              0237 312 3456
-            </a>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-14">
+          <span className="hidden sm:block text-lg">
+            🌾 Viện Nông Nghiệp Thanh Hóa – Thành lập 2018 | Hotline:{' '}
+            <span className="font-semibold text-lg">📞 0929606568</span>
           </span>
           <div className="flex items-center gap-4 ml-auto">
-            <a href="tel:02373123456" className="sm:hidden font-semibold">
-              📞 0237 312 3456
-            </a>
-            <Link href="/tin-tuc" className="hover:underline hidden sm:block">
-              Tin tức
+            <Link
+              href="https://trungtamtuvanquyhoach.gov.vn/"
+              className="hover:underline hidden sm:block font-semibold text-base"
+            >
+              Xúc tiến thị trường nông nghiệp
             </Link>
             <Link
               href="https://viennongnghiepthanhhoa.gov.vn/"
-              className="hover:underline hidden sm:block"
+              className="hover:underline hidden sm:block font-semibold text-base"
             >
-              Giới thiệu
-            </Link>
-            <Link href="/lien-he" className="hover:underline">
-              Liên hệ
+              Thông tin viên nông nghiệp
             </Link>
           </div>
         </div>
