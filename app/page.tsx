@@ -3,17 +3,11 @@ import Link from "next/link";
 import HeroBanner from "./components/HeroBanner";
 import ProductCard from "./components/ProductCard";
 import BusinessProductsSection from "./components/BusinessProductsSection";
-import { products, categories, discountPercent } from "./lib/data";
+import { products, categories } from "./lib/data";
 
 export const metadata: Metadata = {
   title: "Trang chủ",
 };
-
-const productItems = products.filter((p) => p.type !== "service");
-const serviceItems = products.filter((p) => p.type === "service");
-const featuredProducts = productItems.filter((p) => p.sold > 800).slice(0, 8);
-const newProducts = productItems.slice(-4);
-const hotDeals = productItems.filter((p) => discountPercent(p.originalPrice, p.price) >= 13);
 
 const trustBadges = [
   { icon: "✅", title: "Hàng chính hãng", desc: "100% nguồn gốc rõ ràng" },
@@ -21,6 +15,9 @@ const trustBadges = [
   { icon: "🔄", title: "Đổi trả 7 ngày", desc: "Miễn phí nếu lỗi sản xuất" },
   { icon: "📞", title: "Hỗ trợ 24/7", desc: "Kỹ sư tư vấn tận tâm" },
 ];
+
+const serviceCategories = categories.filter((c) => c.type === "service");
+const productCategories = categories.filter((c) => c.type === "product");
 
 export default function HomePage() {
   return (
@@ -45,9 +42,8 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Category grid */}
+      {/* Category quick-nav */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Dịch vụ */}
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-bold text-gray-900">Dịch vụ</h2>
           <Link href="/san-pham?category=tu-van" className="text-sm text-blue-700 font-medium hover:text-blue-600">
@@ -55,7 +51,7 @@ export default function HomePage() {
           </Link>
         </div>
         <div className="grid grid-cols-3 gap-3 mb-6">
-          {categories.filter((c) => c.type === "service").map((cat) => (
+          {serviceCategories.map((cat) => (
             <Link
               key={cat.id}
               href={`/san-pham?category=${cat.id}`}
@@ -67,7 +63,6 @@ export default function HomePage() {
           ))}
         </div>
 
-        {/* Sản phẩm */}
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-bold text-gray-900">Sản phẩm</h2>
           <Link href="/san-pham" className="text-sm text-green-700 font-medium hover:text-green-600">
@@ -75,7 +70,7 @@ export default function HomePage() {
           </Link>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {categories.filter((c) => c.type === "product").map((cat) => (
+          {productCategories.map((cat) => (
             <Link
               key={cat.id}
               href={`/san-pham?category=${cat.id}`}
@@ -88,117 +83,57 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Featured services strip */}
-      <section className="bg-blue-50 border-y border-blue-100 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🔬</span>
-              <h2 className="text-lg font-bold text-blue-800">Dịch vụ nổi bật</h2>
-            </div>
-            <Link href="/san-pham?category=tu-van" className="text-sm text-blue-700 font-medium hover:text-blue-600">
-              Xem thêm →
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {serviceItems.slice(0, 4).map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Hot deals */}
-      {hotDeals.length > 0 && (
-        <section className="bg-red-50 border-y border-red-100 py-8">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">🔥</span>
-                <h2 className="text-lg font-bold text-red-700">Ưu đãi hôm nay</h2>
-                <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded animate-pulse">
-                  HOT
-                </span>
-              </div>
-              <Link href="/san-pham" className="text-sm text-red-700 font-medium hover:text-red-600">
-                Xem thêm →
-              </Link>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {hotDeals.slice(0, 4).map((p) => (
-                <div key={p.id} className="relative">
-                  <div className="absolute -top-2 -right-2 z-10 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-md">
-                    -{discountPercent(p.originalPrice, p.price)}%
-                  </div>
-                  <ProductCard product={p} />
+      {/* One section per product category */}
+      {productCategories.map((cat, idx) => {
+        const items = products.filter((p) => p.category === cat.id);
+        if (items.length === 0) return null;
+        return (
+          <section key={cat.id} className={idx % 2 === 0 ? "bg-white py-8" : "bg-gray-50 py-8"}>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{cat.icon}</span>
+                  <h2 className="text-lg font-bold text-gray-900">{cat.label}</h2>
                 </div>
-              ))}
+                <Link href={`/san-pham?category=${cat.id}`} className="text-sm text-green-700 font-medium hover:text-green-600">
+                  Xem tất cả →
+                </Link>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {items.map((p) => (
+                  <ProductCard key={p.id} product={p} />
+                ))}
+              </div>
             </div>
-          </div>
-        </section>
-      )}
+          </section>
+        );
+      })}
 
-      {/* Featured products */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">⭐</span>
-            <h2 className="text-lg font-bold text-gray-900">Sản phẩm bán chạy</h2>
-          </div>
-          <Link href="/san-pham" className="text-sm text-green-700 font-medium hover:text-green-600">
-            Xem tất cả →
-          </Link>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {featuredProducts.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
-      </section>
-
-      {/* Banner strip */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div className="bg-gradient-to-r from-green-700 to-green-500 rounded-2xl p-5 sm:p-6 text-white flex items-center gap-4">
-            <span className="text-4xl sm:text-5xl flex-shrink-0">🌾</span>
-            <div>
-              <div className="font-bold text-base sm:text-lg">Giống xác nhận cấp quốc gia</div>
-              <div className="text-green-200 text-xs sm:text-sm mb-3">Độ nảy mầm ≥ 85%, năng suất vượt trội</div>
-              <Link href="/san-pham?category=giong-cay-trong" className="bg-white text-green-700 font-semibold text-sm px-4 py-2 rounded-full hover:bg-green-50 transition-colors inline-block">
-                Chọn giống ngay
-              </Link>
+      {/* One section per service category */}
+      {serviceCategories.map((cat, idx) => {
+        const items = products.filter((p) => p.category === cat.id);
+        if (items.length === 0) return null;
+        return (
+          <section key={cat.id} className={idx % 2 === 0 ? "bg-blue-50 border-y border-blue-100 py-8" : "bg-white py-8"}>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{cat.icon}</span>
+                  <h2 className="text-lg font-bold text-blue-900">{cat.label}</h2>
+                </div>
+                <Link href={`/san-pham?category=${cat.id}`} className="text-sm text-blue-700 font-medium hover:text-blue-600">
+                  Xem tất cả →
+                </Link>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {items.map((p) => (
+                  <ProductCard key={p.id} product={p} />
+                ))}
+              </div>
             </div>
-          </div>
-          <div className="bg-gradient-to-r from-amber-600 to-orange-500 rounded-2xl p-5 sm:p-6 text-white flex items-center gap-4">
-            <span className="text-4xl sm:text-5xl flex-shrink-0">🍊</span>
-            <div>
-              <div className="font-bold text-base sm:text-lg">Đặc sản Thanh Hóa</div>
-              <div className="text-amber-100 text-xs sm:text-sm mb-3">Cam, mật ong, gạo ST25 – từ vườn đến bàn ăn</div>
-              <Link href="/san-pham?category=san-pham-vien" className="bg-white text-amber-700 font-semibold text-sm px-4 py-2 rounded-full hover:bg-amber-50 transition-colors inline-block">
-                Khám phá ngay
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* New arrivals */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">🆕</span>
-            <h2 className="text-lg font-bold text-gray-900">Sản phẩm mới</h2>
-          </div>
-          <Link href="/san-pham" className="text-sm text-green-700 font-medium hover:text-green-600">
-            Xem thêm →
-          </Link>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {newProducts.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
-      </section>
+          </section>
+        );
+      })}
 
       {/* Business partner products */}
       <BusinessProductsSection />
