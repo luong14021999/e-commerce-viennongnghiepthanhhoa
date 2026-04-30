@@ -43,7 +43,7 @@ export default function Header() {
               Tin tức
             </Link>
             <Link
-              href="/gioi-thieu"
+              href="https://viennongnghiepthanhhoa.gov.vn/"
               className="hover:underline hidden sm:block"
             >
               Giới thiệu
