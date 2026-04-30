@@ -25,7 +25,7 @@ export type User = {
 
 type AuthContextValue = {
   user: User | null;
-  login: (phone: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  login: (phone: string, password: string) => Promise<{ ok: boolean; error?: string; role?: UserRole }>;
   registerBuyer: (data: BuyerRegisterData) => Promise<{ ok: boolean; error?: string }>;
   registerBusiness: (data: BusinessRegisterData) => Promise<{ ok: boolean; error?: string }>;
   logout: () => void;

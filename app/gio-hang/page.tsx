@@ -11,7 +11,7 @@ const SHIPPING_FEE = 30000;
 
 export default function CartPage() {
   const { items, removeFromCart, updateQuantity, clearCart, totalPrice } = useCart();
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
 
   const shippingFee = totalPrice >= SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
@@ -157,6 +157,7 @@ export default function CartPage() {
               </div>
 
               <button
+                disabled={isLoading}
                 onClick={() => {
                   if (user?.role === "buyer") {
                     router.push("/thanh-toan");
@@ -164,12 +165,12 @@ export default function CartPage() {
                     router.push("/dang-nhap?redirect=/thanh-toan");
                   }
                 }}
-                className="block w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3.5 rounded-xl text-center transition-colors text-sm"
+                className="block w-full bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white font-bold py-3.5 rounded-xl text-center transition-colors text-sm"
               >
-                {user?.role === "buyer" ? `Đặt hàng ngay (${formatPrice(grandTotal)})` : "Đăng nhập để đặt hàng"}
+                {isLoading ? "Đang tải..." : user?.role === "buyer" ? `Đặt hàng ngay (${formatPrice(grandTotal)})` : "Đăng nhập để đặt hàng"}
               </button>
 
-              {!user && (
+              {!isLoading && !user && (
                 <p className="text-xs text-center text-gray-400 mt-2">
                   Bạn cần <Link href="/dang-nhap?redirect=/thanh-toan" className="text-green-700 font-semibold hover:underline">đăng nhập</Link> để thanh toán
                 </p>
