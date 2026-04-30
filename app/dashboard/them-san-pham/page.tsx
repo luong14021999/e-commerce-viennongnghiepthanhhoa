@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
@@ -31,18 +31,20 @@ type FormState = {
   desc: string;
   spec1: string; spec2: string; spec3: string; spec4: string;
   certifications: string;
+  imageUrl: string;
 };
 
 export default function AddProductPage() {
   const { user, isLoading } = useAuth();
-  const { submitProduct } = useProducts();
+  const { submitProduct, saveSellerProfile } = useProducts();
   const router = useRouter();
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [form, setForm] = useState<FormState>({
     name: "", category: "", price: "", originalPrice: "", unit: "kg", icon: "🌾", bg: "bg-green-50",
-    tag: "", desc: "", spec1: "", spec2: "", spec3: "", spec4: "", certifications: "",
+    tag: "", desc: "", spec1: "", spec2: "", spec3: "", spec4: "", certifications: "", imageUrl: "",
   });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!isLoading && (!user || user.role !== "business")) router.push("/dang-nhap");
@@ -53,6 +55,16 @@ export default function AddProductPage() {
   function setField(field: keyof FormState, value: string) {
     setForm((f) => ({ ...f, [field]: value }));
     setErrors((e) => ({ ...e, [field]: undefined }));
+  }
+
+  function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setForm((f) => ({ ...f, imageUrl: ev.target?.result as string }));
+    };
+    reader.readAsDataURL(file);
   }
 
   function validate() {
@@ -83,6 +95,7 @@ export default function AddProductPage() {
       unit: form.unit,
       icon: form.icon,
       bg: form.bg,
+      imageUrl: form.imageUrl || undefined,
       tag: form.tag || undefined,
       tagColor: form.tag ? "bg-green-600 text-white" : undefined,
       desc: form.desc,
@@ -93,6 +106,17 @@ export default function AddProductPage() {
       sellerName: user.business?.businessName ?? user.name,
     });
 
+    saveSellerProfile({
+      id: user.id,
+      name: user.business?.businessName ?? user.name,
+      description: user.business?.description ?? "",
+      address: user.business?.businessAddress ?? "",
+      category: user.business?.category ?? "",
+      verified: user.business?.verified ?? false,
+      phone: user.phone,
+      email: user.email,
+    });
+
     setSubmitted(true);
   }
 
@@ -100,18 +124,23 @@ export default function AddProductPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4 py-16">
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-10 max-w-md w-full text-center">
-          <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-5 text-4xl">⏳</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Đã gửi yêu cầu duyệt!</h2>
+          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5 text-4xl">✅</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Sản phẩm đã được đăng!</h2>
           <p className="text-gray-500 text-sm mb-6">
-            Sản phẩm của bạn đã được gửi đến đội ngũ kiểm duyệt của Viện Nông Nghiệp. Thông thường mất <span className="font-semibold text-amber-700">1–2 ngày làm việc</span> để xét duyệt.
+            Sản phẩm của bạn đã <span className="font-semibold text-green-700">hiển thị công khai</span> ngay trên hệ thống và trong gian hàng của doanh nghiệp.
           </p>
-          <div className="flex gap-3">
-            <Link href="/dashboard" className="flex-1 border-2 border-green-700 text-green-700 font-semibold py-3 rounded-xl text-sm text-center hover:bg-green-50 transition-colors">
-              Về Dashboard
+          <div className="flex flex-col gap-3">
+            <Link href={`/doanh-nghiep/${user.id}`} className="w-full bg-green-700 text-white font-bold py-3 rounded-xl text-sm text-center hover:bg-green-600 transition-colors">
+              Xem gian hàng của tôi →
             </Link>
-            <button onClick={() => setSubmitted(false)} className="flex-1 bg-green-700 text-white font-semibold py-3 rounded-xl text-sm hover:bg-green-600 transition-colors">
-              Thêm sản phẩm khác
-            </button>
+            <div className="flex gap-3">
+              <Link href="/dashboard" className="flex-1 border-2 border-gray-300 text-gray-700 font-semibold py-3 rounded-xl text-sm text-center hover:bg-gray-50 transition-colors">
+                Về Dashboard
+              </Link>
+              <button onClick={() => setSubmitted(false)} className="flex-1 border-2 border-green-700 text-green-700 font-semibold py-3 rounded-xl text-sm hover:bg-green-50 transition-colors">
+                Thêm sản phẩm khác
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -138,7 +167,7 @@ export default function AddProductPage() {
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Tên sản phẩm <span className="text-red-500">*</span></label>
               <input type="text" value={form.name} onChange={(e) => setField("name", e.target.value)}
                 placeholder="VD: Rau muống hữu cơ, Lúa giống BC15..."
-                className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.name ? "border-red-400" : "border-gray-300"}`}/>
+                className={`w-full px-4 py-2.5 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.name ? "border-red-400" : "border-gray-300"}`}/>
               {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
             </div>
 
@@ -146,9 +175,9 @@ export default function AddProductPage() {
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Danh mục <span className="text-red-500">*</span></label>
                 <select value={form.category} onChange={(e) => setField("category", e.target.value)}
-                  className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white ${errors.category ? "border-red-400" : "border-gray-300"}`}>
+                  className={`w-full px-4 py-2.5 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-green-500 bg-white ${errors.category ? "border-red-400" : "border-gray-300"}`}>
                   <option value="">-- Chọn danh mục --</option>
-                  {categories.filter((c) => c.id !== "tat-ca").map((c) => (
+                  {categories.filter((c) => c.type === "product").map((c) => (
                     <option key={c.id} value={c.id}>{c.icon} {c.label}</option>
                   ))}
                 </select>
@@ -158,7 +187,7 @@ export default function AddProductPage() {
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nhãn hiển thị <span className="text-gray-400 font-normal">(tùy chọn)</span></label>
                 <input type="text" value={form.tag} onChange={(e) => setField("tag", e.target.value)}
                   placeholder="VD: Hữu cơ, VietGAP, Mới..."
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-green-500"/>
               </div>
             </div>
 
@@ -166,7 +195,7 @@ export default function AddProductPage() {
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Mô tả sản phẩm <span className="text-red-500">*</span></label>
               <textarea value={form.desc} onChange={(e) => setField("desc", e.target.value)}
                 rows={3} placeholder="Mô tả chi tiết về nguồn gốc, đặc điểm, cách sử dụng..."
-                className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none ${errors.desc ? "border-red-400" : "border-gray-300"}`}/>
+                className={`w-full px-4 py-2.5 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-green-500 resize-none ${errors.desc ? "border-red-400" : "border-gray-300"}`}/>
               {errors.desc && <p className="text-xs text-red-500 mt-1">{errors.desc}</p>}
             </div>
           </div>
@@ -179,20 +208,20 @@ export default function AddProductPage() {
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Giá bán (đ) <span className="text-red-500">*</span></label>
                 <input type="number" value={form.price} onChange={(e) => setField("price", e.target.value)}
                   placeholder="45000" min={0}
-                  className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.price ? "border-red-400" : "border-gray-300"}`}/>
+                  className={`w-full px-4 py-2.5 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.price ? "border-red-400" : "border-gray-300"}`}/>
                 {errors.price && <p className="text-xs text-red-500 mt-1">{errors.price}</p>}
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Giá gốc (đ) <span className="text-gray-400 font-normal">(để hiện giảm giá)</span></label>
                 <input type="number" value={form.originalPrice} onChange={(e) => setField("originalPrice", e.target.value)}
                   placeholder="52000" min={0}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-green-500"/>
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Đơn vị <span className="text-red-500">*</span></label>
                 <input type="text" value={form.unit} onChange={(e) => setField("unit", e.target.value)}
                   placeholder="kg, lít, bao, hộp..."
-                  className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.unit ? "border-red-400" : "border-gray-300"}`}/>
+                  className={`w-full px-4 py-2.5 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.unit ? "border-red-400" : "border-gray-300"}`}/>
                 {errors.unit && <p className="text-xs text-red-500 mt-1">{errors.unit}</p>}
               </div>
             </div>
@@ -205,22 +234,69 @@ export default function AddProductPage() {
               {(["spec1","spec2","spec3","spec4"] as const).map((k, i) => (
                 <input key={k} type="text" value={form[k]} onChange={(e) => setField(k, e.target.value)}
                   placeholder={`Thông số ${i + 1} – VD: Năng suất: 65–70 tạ/ha`}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-green-500"/>
               ))}
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Chứng nhận chất lượng <span className="text-gray-400 font-normal">(phân cách bởi dấu phẩy)</span></label>
               <input type="text" value={form.certifications} onChange={(e) => setField("certifications", e.target.value)}
                 placeholder="VD: VietGAP, Hữu cơ VN, ISO 9001"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-green-500"/>
             </div>
           </div>
 
           {/* Appearance */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
             <h2 className="font-bold text-gray-900 flex items-center gap-2"><span>🎨</span> Hiển thị sản phẩm</h2>
+
+            {/* Image upload */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Biểu tượng sản phẩm</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Ảnh sản phẩm <span className="text-gray-400 font-normal">(tùy chọn)</span>
+              </label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+              {form.imageUrl ? (
+                <div className="relative w-40 h-40 rounded-xl overflow-hidden border-2 border-green-500 group">
+                  <img src={form.imageUrl} alt="preview" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => { setForm((f) => ({ ...f, imageUrl: "" })); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                    className="absolute inset-0 bg-black/50 text-white text-xs font-semibold hidden group-hover:flex items-center justify-center gap-1"
+                  >
+                    🗑 Xóa ảnh
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-40 h-40 rounded-xl border-2 border-dashed border-gray-300 hover:border-green-500 hover:bg-green-50 transition-colors flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-green-700"
+                >
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                  <span className="text-xs font-medium text-center leading-tight">Tải ảnh lên<br/>(JPG, PNG, WEBP)</span>
+                </button>
+              )}
+              {form.imageUrl && (
+                <button type="button" onClick={() => fileInputRef.current?.click()} className="mt-2 text-xs text-blue-600 hover:underline">
+                  Thay ảnh khác
+                </button>
+              )}
+              <p className="text-xs text-gray-400 mt-1">Nếu không tải ảnh, biểu tượng emoji bên dưới sẽ được dùng thay thế.</p>
+            </div>
+
+            {/* Emoji icon (fallback) */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Biểu tượng sản phẩm <span className="text-gray-400 font-normal">(dùng khi không có ảnh)</span>
+              </label>
               <div className="flex flex-wrap gap-2">
                 {ICONS.map((icon) => (
                   <button key={icon} type="button" onClick={() => setField("icon", icon)}
@@ -230,6 +306,7 @@ export default function AddProductPage() {
                 ))}
               </div>
             </div>
+
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Màu nền thẻ sản phẩm</label>
               <div className="flex flex-wrap gap-2">
@@ -247,8 +324,12 @@ export default function AddProductPage() {
               <label className="block text-sm font-semibold text-gray-700 mb-2">Xem trước thẻ sản phẩm</label>
               <div className="max-w-48">
                 <div className={`${form.bg} rounded-xl border border-gray-200 overflow-hidden`}>
-                  <div className={`${form.bg} flex items-center justify-center h-28 relative`}>
-                    <span className="text-5xl">{form.icon}</span>
+                  <div className={`${form.bg} flex items-center justify-center h-28 relative overflow-hidden`}>
+                    {form.imageUrl ? (
+                      <img src={form.imageUrl} alt="preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-5xl">{form.icon}</span>
+                    )}
                     {form.tag && <span className="absolute top-2 left-2 text-xs font-bold px-2 py-0.5 rounded bg-green-600 text-white">{form.tag}</span>}
                   </div>
                   <div className="p-3">

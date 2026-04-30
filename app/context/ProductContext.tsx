@@ -4,10 +4,25 @@ import { createContext, useContext, useState, useEffect } from "react";
 import type { Product, ProductStatus } from "@/app/lib/data";
 
 const STORAGE_KEY = "seller_products";
+const PROFILES_KEY = "seller_profiles";
+
+export type SellerProfile = {
+  id: string;
+  name: string;
+  description: string;
+  address: string;
+  category: string;
+  verified: boolean;
+  phone?: string;
+  email?: string;
+};
 
 type ProductContextValue = {
   sellerProducts: Product[];
+  sellerProfiles: Record<string, SellerProfile>;
   submitProduct: (data: Omit<Product, "id" | "rating" | "reviews" | "sold" | "status" | "submittedAt">) => void;
+  saveSellerProfile: (profile: SellerProfile) => void;
+  getSellerProfile: (sellerId: string) => SellerProfile | undefined;
   updateStatus: (id: string, status: ProductStatus, rejectionReason?: string) => void;
   deleteProduct: (id: string) => void;
   getByStatus: (status: ProductStatus) => Product[];
@@ -16,12 +31,11 @@ type ProductContextValue = {
 
 const ProductContext = createContext<ProductContextValue | null>(null);
 
-// Seed some demo pending products from the mock business account
 const DEMO_SELLER_PRODUCTS: Product[] = [
   {
     id: "sp-demo-1",
     name: "Rau muống hữu cơ Vĩnh Lộc",
-    category: "rau",
+    category: "san-pham-vien",
     price: 12000,
     originalPrice: 15000,
     unit: "kg",
@@ -38,13 +52,13 @@ const DEMO_SELLER_PRODUCTS: Product[] = [
     certifications: ["Hữu cơ VN"],
     sellerId: "biz-1",
     sellerName: "HTX Nông Sản Xanh Thanh Hóa",
-    status: "pending",
-    submittedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    status: "approved",
+    submittedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
   },
   {
     id: "sp-demo-2",
     name: "Dưa chuột VietGAP",
-    category: "rau",
+    category: "san-pham-vien",
     price: 18000,
     originalPrice: 22000,
     unit: "kg",
@@ -66,27 +80,44 @@ const DEMO_SELLER_PRODUCTS: Product[] = [
   },
 ];
 
+const DEMO_SELLER_PROFILES: Record<string, SellerProfile> = {
+  "biz-1": {
+    id: "biz-1",
+    name: "HTX Nông Sản Xanh Thanh Hóa",
+    description: "Chuyên cung cấp rau sạch VietGAP và các sản phẩm nông sản hữu cơ từ vùng Vĩnh Lộc. Cam kết sản xuất theo quy trình khép kín, không hóa chất, an toàn cho sức khỏe người tiêu dùng.",
+    address: "Xã Vĩnh Tân, Vĩnh Lộc, Thanh Hóa",
+    category: "san-pham-vien",
+    verified: true,
+  },
+};
+
 export function ProductProvider({ children }: { children: React.ReactNode }) {
   const [sellerProducts, setSellerProducts] = useState<Product[]>([]);
+  const [sellerProfiles, setSellerProfiles] = useState<Record<string, SellerProfile>>({});
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        setSellerProducts(JSON.parse(saved));
-      } else {
-        // Seed demo data on first load
-        setSellerProducts(DEMO_SELLER_PRODUCTS);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(DEMO_SELLER_PRODUCTS));
-      }
+      const savedProducts = localStorage.getItem(STORAGE_KEY);
+      setSellerProducts(savedProducts ? JSON.parse(savedProducts) : DEMO_SELLER_PRODUCTS);
+      if (!savedProducts) localStorage.setItem(STORAGE_KEY, JSON.stringify(DEMO_SELLER_PRODUCTS));
+
+      const savedProfiles = localStorage.getItem(PROFILES_KEY);
+      setSellerProfiles(savedProfiles ? JSON.parse(savedProfiles) : DEMO_SELLER_PROFILES);
+      if (!savedProfiles) localStorage.setItem(PROFILES_KEY, JSON.stringify(DEMO_SELLER_PROFILES));
     } catch {
       setSellerProducts(DEMO_SELLER_PRODUCTS);
+      setSellerProfiles(DEMO_SELLER_PROFILES);
     }
   }, []);
 
-  function persist(products: Product[]) {
+  function persistProducts(products: Product[]) {
     setSellerProducts(products);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+  }
+
+  function persistProfiles(profiles: Record<string, SellerProfile>) {
+    setSellerProfiles(profiles);
+    localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
   }
 
   function submitProduct(data: Omit<Product, "id" | "rating" | "reviews" | "sold" | "status" | "submittedAt">) {
@@ -96,14 +127,22 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       rating: 0,
       reviews: 0,
       sold: 0,
-      status: "pending",
+      status: "approved",
       submittedAt: new Date().toISOString(),
     };
-    persist([...sellerProducts, newProduct]);
+    persistProducts([...sellerProducts, newProduct]);
+  }
+
+  function saveSellerProfile(profile: SellerProfile) {
+    persistProfiles({ ...sellerProfiles, [profile.id]: profile });
+  }
+
+  function getSellerProfile(sellerId: string): SellerProfile | undefined {
+    return sellerProfiles[sellerId];
   }
 
   function updateStatus(id: string, status: ProductStatus, rejectionReason?: string) {
-    persist(
+    persistProducts(
       sellerProducts.map((p) =>
         p.id === id ? { ...p, status, rejectionReason: rejectionReason ?? p.rejectionReason } : p
       )
@@ -111,7 +150,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   }
 
   function deleteProduct(id: string) {
-    persist(sellerProducts.filter((p) => p.id !== id));
+    persistProducts(sellerProducts.filter((p) => p.id !== id));
   }
 
   function getByStatus(status: ProductStatus) {
@@ -123,7 +162,11 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <ProductContext.Provider value={{ sellerProducts, submitProduct, updateStatus, deleteProduct, getByStatus, getBySeller }}>
+    <ProductContext.Provider value={{
+      sellerProducts, sellerProfiles,
+      submitProduct, saveSellerProfile, getSellerProfile,
+      updateStatus, deleteProduct, getByStatus, getBySeller,
+    }}>
       {children}
     </ProductContext.Provider>
   );

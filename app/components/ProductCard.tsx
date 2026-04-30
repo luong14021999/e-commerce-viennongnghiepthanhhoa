@@ -7,19 +7,24 @@ import { useCart } from "@/app/context/CartContext";
 
 export default function ProductCard({ product }: { product: Product }) {
   const { addToCart } = useCart();
-  const discount = discountPercent(product.originalPrice, product.price);
+  const isService = product.type === "service";
+  const discount = isService ? 0 : discountPercent(product.originalPrice, product.price);
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col group">
       {/* Image area */}
-      <Link href={`/san-pham/${product.id}`} className={`${product.bg} flex items-center justify-center h-40 relative`}>
-        <span className="text-6xl">{product.icon}</span>
+      <Link href={`/san-pham/${product.id}`} className={`${product.bg} flex items-center justify-center h-40 relative overflow-hidden`}>
+        {product.imageUrl ? (
+          <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+        ) : (
+          <span className="text-6xl">{product.icon}</span>
+        )}
         {product.tag && (
           <span className={`absolute top-2 left-2 text-xs font-bold px-2 py-0.5 rounded ${product.tagColor}`}>
             {product.tag}
           </span>
         )}
-        {discount > 0 && (
+        {!isService && discount > 0 && (
           <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded">
             -{discount}%
           </span>
@@ -34,7 +39,6 @@ export default function ProductCard({ product }: { product: Product }) {
           </h3>
         </Link>
 
-        {/* Origin */}
         <p className="text-xs text-gray-400 mb-2 truncate">{product.origin}</p>
 
         {/* Rating */}
@@ -47,24 +51,41 @@ export default function ProductCard({ product }: { product: Product }) {
             ))}
           </div>
           <span className="text-xs text-gray-500">({product.reviews})</span>
-          <span className="text-xs text-gray-400 ml-auto">Đã bán: {product.sold.toLocaleString()}</span>
+          {isService ? (
+            <span className="text-xs text-blue-500 ml-auto">{product.sold.toLocaleString()} lượt</span>
+          ) : (
+            <span className="text-xs text-gray-400 ml-auto">Đã bán: {product.sold.toLocaleString()}</span>
+          )}
         </div>
 
-        {/* Price */}
         <div className="mt-auto">
-          <div className="flex items-baseline gap-2 mb-2">
-            <span className="text-base font-bold text-red-600">{formatPrice(product.price)}</span>
-            {discount > 0 && (
-              <span className="text-xs text-gray-400 line-through">{formatPrice(product.originalPrice)}</span>
-            )}
-            <span className="text-xs text-gray-500">/{product.unit}</span>
-          </div>
-          <button
-            onClick={() => addToCart(product)}
-            className="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-semibold py-2 rounded-lg transition-colors"
-          >
-            Thêm vào giỏ
-          </button>
+          {isService ? (
+            <>
+              <p className="text-sm font-semibold text-blue-700 mb-2">Liên hệ để biết giá</p>
+              <Link
+                href={`/san-pham/${product.id}`}
+                className="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors"
+              >
+                Xem chi tiết & liên hệ
+              </Link>
+            </>
+          ) : (
+            <>
+              <div className="flex items-baseline gap-2 mb-2">
+                <span className="text-base font-bold text-red-600">{formatPrice(product.price)}</span>
+                {discount > 0 && (
+                  <span className="text-xs text-gray-400 line-through">{formatPrice(product.originalPrice)}</span>
+                )}
+                <span className="text-xs text-gray-500">/{product.unit}</span>
+              </div>
+              <button
+                onClick={() => addToCart(product)}
+                className="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors"
+              >
+                Thêm vào giỏ
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

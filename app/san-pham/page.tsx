@@ -4,7 +4,7 @@ import { useState, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import ProductCard from "@/app/components/ProductCard";
-import { products as baseProducts, categories } from "@/app/lib/data";
+import { products as baseProducts, categories, formatPrice } from "@/app/lib/data";
 import { useProducts } from "@/app/context/ProductContext";
 
 const sortOptions = [
@@ -32,13 +32,20 @@ function ProductsContent() {
   const [sortBy, setSortBy] = useState("popular");
   const [searchQuery] = useState(initialQuery);
 
-  const { getByStatus } = useProducts();
+  const { getByStatus, sellerProfiles, getBySeller } = useProducts();
+
   // Merge base catalog with approved seller products (deduplicate by id)
   const allProducts = useMemo(() => {
     const approvedSeller = getByStatus("approved");
     const baseIds = new Set(baseProducts.map((p) => p.id));
     const newSeller = approvedSeller.filter((p) => !baseIds.has(p.id));
     return [...baseProducts, ...newSeller];
+  }, [getByStatus]);
+
+  // Unique seller IDs that have at least one approved product
+  const businessIds = useMemo(() => {
+    const approved = getByStatus("approved");
+    return [...new Set(approved.map((p) => p.sellerId).filter(Boolean))] as string[];
   }, [getByStatus]);
 
   const filtered = useMemo(() => {
@@ -92,15 +99,40 @@ function ProductsContent() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Category tabs */}
-        <div className="bg-white rounded-xl border border-gray-200 p-1 mb-6 flex gap-1 overflow-x-auto scrollbar-hide">
-          {categories.map((cat) => (
+        <div className="bg-white rounded-xl border border-gray-200 p-1 mb-6 flex gap-1 overflow-x-auto scrollbar-hide items-center">
+          {/* Tất cả */}
+          {categories.filter((c) => c.type === "all").map((cat) => (
             <button
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
-                activeCategory === cat.id
-                  ? "bg-green-600 text-white shadow-sm"
-                  : "text-gray-600 hover:bg-gray-100"
+                activeCategory === cat.id ? "bg-green-600 text-white shadow-sm" : "text-gray-600 hover:bg-gray-100"
+              }`}
+            >
+              {cat.icon} {cat.label}
+            </button>
+          ))}
+          <span className="w-px h-6 bg-gray-200 flex-shrink-0" />
+          <span className="text-xs text-blue-500 font-semibold px-1 whitespace-nowrap flex-shrink-0">Dịch vụ</span>
+          {categories.filter((c) => c.type === "service").map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setActiveCategory(cat.id)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
+                activeCategory === cat.id ? "bg-blue-600 text-white shadow-sm" : "text-gray-600 hover:bg-blue-50"
+              }`}
+            >
+              {cat.icon} {cat.label}
+            </button>
+          ))}
+          <span className="w-px h-6 bg-gray-200 flex-shrink-0" />
+          <span className="text-xs text-green-600 font-semibold px-1 whitespace-nowrap flex-shrink-0">Sản phẩm</span>
+          {categories.filter((c) => c.type === "product").map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setActiveCategory(cat.id)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
+                activeCategory === cat.id ? "bg-green-600 text-white shadow-sm" : "text-gray-600 hover:bg-gray-100"
               }`}
             >
               {cat.icon} {cat.label}
@@ -152,6 +184,108 @@ function ProductsContent() {
                 <ProductCard product={p} />
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Partner businesses */}
+        {businessIds.length > 0 && (
+          <div className="mt-12">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">🏪 Doanh nghiệp đối tác</h2>
+                <p className="text-sm text-gray-500 mt-0.5">{businessIds.length} doanh nghiệp đang kinh doanh trên sàn</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {businessIds.map((sellerId) => {
+                const profile = sellerProfiles[sellerId];
+                const bizProducts = getBySeller(sellerId).filter((p) => p.status === "approved");
+                const sellerName = profile?.name ?? bizProducts[0]?.sellerName ?? sellerId;
+                const totalSold = bizProducts.reduce((s, p) => s + p.sold, 0);
+                const preview = bizProducts.slice(0, 3);
+                return (
+                  <div key={sellerId} className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                    {/* Business header */}
+                    <div className="bg-gradient-to-r from-green-700 to-green-600 p-4 flex items-center gap-3">
+                      <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl border border-white/30 flex-shrink-0">
+                        🏪
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-white font-bold text-sm leading-tight line-clamp-1">{sellerName}</p>
+                          {profile?.verified && (
+                            <span className="bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-green-400 flex-shrink-0">✓ Xác minh</span>
+                          )}
+                        </div>
+                        {profile?.address && (
+                          <p className="text-green-200 text-xs mt-0.5 line-clamp-1">📍 {profile.address}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-4 text-sm">
+                      <div className="flex items-center gap-1.5 text-gray-600">
+                        <span className="text-base">📦</span>
+                        <span><strong className="text-gray-900">{bizProducts.length}</strong> sản phẩm</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-gray-600">
+                        <span className="text-base">🛒</span>
+                        <span><strong className="text-gray-900">{totalSold.toLocaleString()}</strong> đã bán</span>
+                      </div>
+                    </div>
+
+                    {/* Product preview */}
+                    {preview.length > 0 && (
+                      <div className="px-4 py-3 flex gap-2">
+                        {preview.map((p) => (
+                          <div key={p.id} className="flex-1">
+                            <div className={`${p.bg} w-full aspect-square rounded-lg overflow-hidden flex items-center justify-center text-2xl mb-1`}>
+                              {p.imageUrl
+                                ? <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+                                : <span>{p.icon}</span>
+                              }
+                            </div>
+                            <p className="text-[11px] text-gray-600 line-clamp-1 font-medium">{p.name}</p>
+                            <p className="text-[11px] text-green-700 font-bold">{p.price > 0 ? formatPrice(p.price) : "Liên hệ"}</p>
+                          </div>
+                        ))}
+                        {bizProducts.length > 3 && (
+                          <div className="flex-1 flex items-center justify-center">
+                            <span className="text-xs text-gray-400 font-semibold">+{bizProducts.length - 3} nữa</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Description */}
+                    {profile?.description && (
+                      <div className="px-4 pb-3">
+                        <p className="text-xs text-gray-500 line-clamp-2">{profile.description}</p>
+                      </div>
+                    )}
+
+                    {/* Footer */}
+                    <div className="px-4 py-3 border-t border-gray-100 flex gap-2">
+                      <Link
+                        href={`/doanh-nghiep/${sellerId}`}
+                        className="flex-1 text-center bg-green-700 text-white text-xs font-bold py-2 rounded-lg hover:bg-green-600 transition-colors"
+                      >
+                        Xem gian hàng →
+                      </Link>
+                      {profile?.phone && (
+                        <a
+                          href={`tel:${profile.phone}`}
+                          className="border border-gray-200 text-gray-600 text-xs font-semibold px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1"
+                        >
+                          📞
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 

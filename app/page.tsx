@@ -2,15 +2,18 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import HeroBanner from "./components/HeroBanner";
 import ProductCard from "./components/ProductCard";
+import BusinessProductsSection from "./components/BusinessProductsSection";
 import { products, categories, discountPercent } from "./lib/data";
 
 export const metadata: Metadata = {
   title: "Trang chủ",
 };
 
-const featuredProducts = products.filter((p) => p.sold > 800).slice(0, 8);
-const newProducts = products.slice(-4);
-const hotDeals = products.filter((p) => discountPercent(p.originalPrice, p.price) >= 13);
+const productItems = products.filter((p) => p.type !== "service");
+const serviceItems = products.filter((p) => p.type === "service");
+const featuredProducts = productItems.filter((p) => p.sold > 800).slice(0, 8);
+const newProducts = productItems.slice(-4);
+const hotDeals = productItems.filter((p) => discountPercent(p.originalPrice, p.price) >= 13);
 
 const trustBadges = [
   { icon: "✅", title: "Hàng chính hãng", desc: "100% nguồn gốc rõ ràng" },
@@ -44,14 +47,35 @@ export default function HomePage() {
 
       {/* Category grid */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-gray-900">Danh mục sản phẩm</h2>
+        {/* Dịch vụ */}
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-bold text-gray-900">Dịch vụ</h2>
+          <Link href="/san-pham?category=tu-van" className="text-sm text-blue-700 font-medium hover:text-blue-600">
+            Xem tất cả →
+          </Link>
+        </div>
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          {categories.filter((c) => c.type === "service").map((cat) => (
+            <Link
+              key={cat.id}
+              href={`/san-pham?category=${cat.id}`}
+              className="flex flex-col items-center gap-2 p-4 bg-blue-50 rounded-xl border border-blue-100 hover:border-blue-300 hover:shadow-sm transition-all group"
+            >
+              <span className="text-3xl group-hover:scale-110 transition-transform">{cat.icon}</span>
+              <span className="text-xs font-medium text-blue-800 text-center leading-tight">{cat.label}</span>
+            </Link>
+          ))}
+        </div>
+
+        {/* Sản phẩm */}
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-bold text-gray-900">Sản phẩm</h2>
           <Link href="/san-pham" className="text-sm text-green-700 font-medium hover:text-green-600">
             Xem tất cả →
           </Link>
         </div>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-          {categories.filter((c) => c.id !== "tat-ca").map((cat) => (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {categories.filter((c) => c.type === "product").map((cat) => (
             <Link
               key={cat.id}
               href={`/san-pham?category=${cat.id}`}
@@ -61,6 +85,26 @@ export default function HomePage() {
               <span className="text-xs font-medium text-gray-700 text-center leading-tight">{cat.label}</span>
             </Link>
           ))}
+        </div>
+      </section>
+
+      {/* Featured services strip */}
+      <section className="bg-blue-50 border-y border-blue-100 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">🔬</span>
+              <h2 className="text-lg font-bold text-blue-800">Dịch vụ nổi bật</h2>
+            </div>
+            <Link href="/san-pham?category=tu-van" className="text-sm text-blue-700 font-medium hover:text-blue-600">
+              Xem thêm →
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {serviceItems.slice(0, 4).map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
         </div>
       </section>
 
@@ -115,22 +159,22 @@ export default function HomePage() {
       {/* Banner strip */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
         <div className="grid sm:grid-cols-2 gap-4">
-          <div className="bg-gradient-to-r from-green-700 to-green-500 rounded-2xl p-6 text-white flex items-center gap-4">
-            <span className="text-5xl">🌾</span>
+          <div className="bg-gradient-to-r from-green-700 to-green-500 rounded-2xl p-5 sm:p-6 text-white flex items-center gap-4">
+            <span className="text-4xl sm:text-5xl flex-shrink-0">🌾</span>
             <div>
-              <div className="font-bold text-lg">Giống xác nhận cấp quốc gia</div>
-              <div className="text-green-200 text-sm mb-3">Độ nảy mầm ≥ 85%, năng suất vượt trội</div>
-              <Link href="/san-pham?category=giong" className="bg-white text-green-700 font-semibold text-sm px-4 py-1.5 rounded-full hover:bg-green-50 transition-colors inline-block">
+              <div className="font-bold text-base sm:text-lg">Giống xác nhận cấp quốc gia</div>
+              <div className="text-green-200 text-xs sm:text-sm mb-3">Độ nảy mầm ≥ 85%, năng suất vượt trội</div>
+              <Link href="/san-pham?category=giong-cay-trong" className="bg-white text-green-700 font-semibold text-sm px-4 py-2 rounded-full hover:bg-green-50 transition-colors inline-block">
                 Chọn giống ngay
               </Link>
             </div>
           </div>
-          <div className="bg-gradient-to-r from-amber-600 to-orange-500 rounded-2xl p-6 text-white flex items-center gap-4">
-            <span className="text-5xl">🍊</span>
+          <div className="bg-gradient-to-r from-amber-600 to-orange-500 rounded-2xl p-5 sm:p-6 text-white flex items-center gap-4">
+            <span className="text-4xl sm:text-5xl flex-shrink-0">🍊</span>
             <div>
-              <div className="font-bold text-lg">Đặc sản Thanh Hóa</div>
-              <div className="text-amber-100 text-sm mb-3">Cam, mật ong, gạo ST25 – từ vườn đến bàn ăn</div>
-              <Link href="/san-pham?category=thucpham" className="bg-white text-amber-700 font-semibold text-sm px-4 py-1.5 rounded-full hover:bg-amber-50 transition-colors inline-block">
+              <div className="font-bold text-base sm:text-lg">Đặc sản Thanh Hóa</div>
+              <div className="text-amber-100 text-xs sm:text-sm mb-3">Cam, mật ong, gạo ST25 – từ vườn đến bàn ăn</div>
+              <Link href="/san-pham?category=san-pham-vien" className="bg-white text-amber-700 font-semibold text-sm px-4 py-2 rounded-full hover:bg-amber-50 transition-colors inline-block">
                 Khám phá ngay
               </Link>
             </div>
@@ -155,6 +199,9 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
+      {/* Business partner products */}
+      <BusinessProductsSection />
 
       {/* Stats bar */}
       <section className="bg-green-800 text-white py-10">

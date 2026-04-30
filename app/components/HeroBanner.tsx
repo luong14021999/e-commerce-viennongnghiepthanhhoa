@@ -57,8 +57,11 @@ export default function HeroBanner() {
           <button
             key={i}
             onClick={() => setCurrent(i)}
-            className={`w-2.5 h-2.5 rounded-full transition-all ${i === current ? "bg-white w-6" : "bg-white/40"}`}
-          />
+            aria-label={`Slide ${i + 1}`}
+            className={`p-1.5 rounded-full transition-all flex items-center justify-center`}
+          >
+            <span className={`block rounded-full transition-all ${i === current ? "bg-white w-6 h-2.5" : "bg-white/40 w-2.5 h-2.5"}`} />
+          </button>
         ))}
       </div>
     </div>

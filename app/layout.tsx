@@ -22,6 +22,11 @@ export const metadata: Metadata = {
   keywords: ["nông nghiệp", "Thanh Hóa", "giống cây trồng", "phân bón", "lúa giống", "rau sạch", "đặc sản"],
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{

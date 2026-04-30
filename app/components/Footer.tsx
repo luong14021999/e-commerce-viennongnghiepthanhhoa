@@ -5,9 +5,9 @@ export default function Footer() {
   return (
     <footer className="bg-gray-900 text-gray-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
           {/* Brand */}
-          <div className="col-span-2 md:col-span-1">
+          <div className="sm:col-span-2 md:col-span-1">
             <div className="flex items-center gap-2.5 mb-4">
               <Image
                 src="/thanh_hoa_agriculture_logo.png"
@@ -49,26 +49,33 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Products */}
+          {/* Dịch vụ */}
           <div>
-            <h3 className="text-white font-semibold mb-4">Sản phẩm</h3>
+            <h3 className="text-white font-semibold mb-4">Dịch vụ</h3>
             <ul className="space-y-2 text-sm">
               {[
-                ['Giống cây trồng', '/san-pham?category=giong'],
-                ['Phân bón', '/san-pham?category=phanbon'],
-                ['Thuốc BVTV', '/san-pham?category=thuoc'],
-                ['Rau & Cây ăn quả', '/san-pham?category=rau'],
-                ['Thực phẩm đặc sản', '/san-pham?category=thucpham'],
-              ].map(([label, href]) => (
-                <li key={label}>
-                  <Link
-                    href={href}
-                    className="hover:text-green-400 transition-colors"
-                  >
-                    {label}
-                  </Link>
-                </li>
-              ))}
+                ['Tư vấn nông nghiệp', '/san-pham?category=tu-van'],
+                ['Phân tích – kiểm nghiệm', '/san-pham?category=phan-tich'],
+                ['Đào tạo – chuyển giao CN', '/san-pham?category=dao-tao'],
+                ['──', ''],
+                ['Giống cây trồng', '/san-pham?category=giong-cay-trong'],
+                ['Giống vật nuôi – TS', '/san-pham?category=giong-vat-nuoi'],
+                ['Sản phẩm Viện', '/san-pham?category=san-pham-vien'],
+                ['Vật tư – chế phẩm', '/san-pham?category=vat-tu'],
+              ].map(([label, href]) =>
+                label === '──' ? (
+                  <li key="sep" className="border-t border-gray-700 my-1" />
+                ) : (
+                  <li key={label}>
+                    <Link
+                      href={href}
+                      className="hover:text-green-400 transition-colors"
+                    >
+                      {label}
+                    </Link>
+                  </li>
+                )
+              )}
             </ul>
           </div>
 

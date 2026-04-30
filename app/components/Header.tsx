@@ -36,13 +36,13 @@ export default function Header() {
           <div className="flex items-center gap-4 ml-auto">
             <Link
               href="https://trungtamtuvanquyhoach.gov.vn/"
-              className="hover:underline hidden sm:block font-semibold text-base"
+              className="hover:underline hidden sm:block font-semibold"
             >
               Xúc tiến thị trường nông nghiệp
             </Link>
             <Link
               href="https://viennongnghiepthanhhoa.gov.vn/"
-              className="hover:underline hidden sm:block font-semibold text-base"
+              className="hover:underline hidden sm:block font-semibold"
             >
               Thông tin viên nông nghiệp
             </Link>
@@ -52,7 +52,7 @@ export default function Header() {
 
       {/* Main header */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-4 h-35">
+        <div className="flex items-center gap-2 sm:gap-4 py-3 sm:py-2">
           {/* Logo */}
           <Link
             href="/"
@@ -63,13 +63,13 @@ export default function Header() {
               alt="Viện Nông Nghiệp Thanh Hóa"
               width={120}
               height={120}
-              className="flex-shrink-0 object-contain"
+              className="flex-shrink-0 object-contain w-10 h-10 sm:w-16 sm:h-16"
             />
             <div className="leading-tight">
-              <div className="text-2xl font-extrabold text-green-800 uppercase tracking-wide">
+              <div className="text-base sm:text-2xl font-extrabold text-green-800 uppercase tracking-wide">
                 Viện Nông Nghiệp
               </div>
-              <div className="text-xl font-bold text-green-600">Thanh Hóa</div>
+              <div className="text-sm sm:text-xl font-bold text-green-600">Thanh Hóa</div>
             </div>
           </Link>
 
@@ -84,7 +84,7 @@ export default function Header() {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Tìm kiếm sản phẩm... (lúa giống, phân bón, rau sạch...)"
-                className="flex-1 px-4 py-2 text-sm outline-none text-gray-700 bg-white"
+                className="flex-1 px-4 py-2 text-base outline-none text-gray-700 bg-white"
               />
               <button
                 type="submit"
@@ -367,7 +367,7 @@ export default function Header() {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Tìm sản phẩm..."
-                className="flex-1 px-3 py-2 text-sm outline-none"
+                className="flex-1 px-3 py-2 text-base outline-none"
               />
               <button
                 type="submit"
@@ -396,21 +396,43 @@ export default function Header() {
       <div className="border-t border-gray-100 bg-white hidden sm:block">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
-            {categories.map(cat => (
+            {/* Tất cả */}
+            <Link
+              href="/san-pham"
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
+                pathname === '/san-pham' ? 'border-green-600 text-green-700' : 'border-transparent text-gray-600 hover:text-green-700 hover:border-green-300'
+              }`}
+            >
+              🛒 Tất cả
+            </Link>
+            <span className="w-px h-5 bg-gray-200 flex-shrink-0" />
+            <span className="text-xs text-blue-500 font-semibold px-1 whitespace-nowrap flex-shrink-0">Dịch vụ</span>
+            {categories.filter(c => c.type === 'service').map(cat => (
               <Link
                 key={cat.id}
-                href={
-                  cat.id === 'tat-ca'
-                    ? '/san-pham'
-                    : `/san-pham?category=${cat.id}`
-                }
+                href={`/san-pham?category=${cat.id}`}
                 className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
-                  (cat.id === 'tat-ca' && pathname === '/san-pham') ||
-                  (pathname.includes('san-pham') &&
-                    typeof window !== 'undefined' &&
-                    new URLSearchParams(window.location.search).get(
-                      'category',
-                    ) === cat.id)
+                  pathname.includes('san-pham') &&
+                  typeof window !== 'undefined' &&
+                  new URLSearchParams(window.location.search).get('category') === cat.id
+                    ? 'border-blue-600 text-blue-700'
+                    : 'border-transparent text-gray-600 hover:text-blue-700 hover:border-blue-300'
+                }`}
+              >
+                <span>{cat.icon}</span>
+                {cat.label}
+              </Link>
+            ))}
+            <span className="w-px h-5 bg-gray-200 flex-shrink-0" />
+            <span className="text-xs text-green-600 font-semibold px-1 whitespace-nowrap flex-shrink-0">Sản phẩm</span>
+            {categories.filter(c => c.type === 'product').map(cat => (
+              <Link
+                key={cat.id}
+                href={`/san-pham?category=${cat.id}`}
+                className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
+                  pathname.includes('san-pham') &&
+                  typeof window !== 'undefined' &&
+                  new URLSearchParams(window.location.search).get('category') === cat.id
                     ? 'border-green-600 text-green-700'
                     : 'border-transparent text-gray-600 hover:text-green-700 hover:border-green-300'
                 }`}
@@ -426,14 +448,26 @@ export default function Header() {
       {/* Mobile nav menu */}
       {mobileMenuOpen && (
         <div className="sm:hidden bg-white border-t border-gray-200 py-2">
-          {categories.map(cat => (
+          <Link href="/san-pham" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700">
+            🛒 Tất cả
+          </Link>
+          <p className="px-4 pt-2 pb-1 text-xs text-blue-500 font-semibold uppercase">Dịch vụ</p>
+          {categories.filter(c => c.type === 'service').map(cat => (
             <Link
               key={cat.id}
-              href={
-                cat.id === 'tat-ca'
-                  ? '/san-pham'
-                  : `/san-pham?category=${cat.id}`
-              }
+              href={`/san-pham?category=${cat.id}`}
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+            >
+              <span>{cat.icon}</span>
+              {cat.label}
+            </Link>
+          ))}
+          <p className="px-4 pt-2 pb-1 text-xs text-green-600 font-semibold uppercase">Sản phẩm</p>
+          {categories.filter(c => c.type === 'product').map(cat => (
+            <Link
+              key={cat.id}
+              href={`/san-pham?category=${cat.id}`}
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700"
             >

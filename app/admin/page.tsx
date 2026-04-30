@@ -112,8 +112,13 @@ export default function AdminPage() {
           <div className="space-y-4">
             {filtered.map((p) => (
               <div key={p.id} className="bg-white rounded-2xl border border-gray-200 p-5 flex gap-4 items-start flex-wrap md:flex-nowrap">
-                {/* Icon */}
-                <div className={`${p.bg} w-16 h-16 rounded-xl flex items-center justify-center text-3xl flex-shrink-0`}>{p.icon}</div>
+                {/* Thumbnail */}
+                <div className={`${p.bg} w-16 h-16 rounded-xl overflow-hidden flex items-center justify-center text-3xl flex-shrink-0`}>
+                  {p.imageUrl
+                    ? <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+                    : p.icon
+                  }
+                </div>
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
@@ -216,7 +221,7 @@ export default function AdminPage() {
               onChange={(e) => setRejectReason(e.target.value)}
               rows={3}
               placeholder="VD: Thiếu chứng nhận chất lượng, giá không hợp lý, mô tả chưa đầy đủ..."
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-400 resize-none mb-4"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-red-400 resize-none mb-4"
             />
             <div className="flex gap-3">
               <button onClick={() => { setRejectId(null); setRejectReason(""); }}
