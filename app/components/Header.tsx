@@ -32,8 +32,7 @@ export default function Header() {
       <div className="bg-green-700 text-white text-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-14">
           <span className="hidden sm:block text-lg">
-            🌾 Viện Nông Nghiệp Thanh Hóa – Thành lập 2018 | Hotline:{' '}
-            <span className="font-semibold text-lg">📞 0929606568</span>
+            🌾 Viện Nông Nghiệp Thanh Hóa – Thành lập 2018
           </span>
           <div className="flex items-center gap-4 ml-auto">
             <Link
