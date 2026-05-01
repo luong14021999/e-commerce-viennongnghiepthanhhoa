@@ -12,9 +12,9 @@ const productCategories = categories.filter((c) => c.type === "product");
 export default function CategorySections() {
   const { sellerProducts } = useProducts();
 
-  // Admin-uploaded products that are approved
+  // Institute-uploaded products (admin uploads always set sellerName to this constant)
   const instituteProducts = useMemo(
-    () => sellerProducts.filter((p) => p.sellerId?.startsWith("admin-") && p.status === "approved"),
+    () => sellerProducts.filter((p) => p.sellerName === "Viện Nông Nghiệp Thanh Hóa" && p.status === "approved"),
     [sellerProducts]
   );
 

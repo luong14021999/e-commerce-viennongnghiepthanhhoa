@@ -1,10 +1,9 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { uploadProductImages } from "@/lib/storage";
 import type { Product, ProductStatus } from "@/app/lib/data";
-
-const STORAGE_KEY = "seller_products";
-const PROFILES_KEY = "seller_profiles";
 
 export type SellerProfile = {
   id: string;
@@ -21,143 +20,181 @@ type ProductContextValue = {
   sellerProducts: Product[];
   sellerProfiles: Record<string, SellerProfile>;
   isLoaded: boolean;
-  submitProduct: (data: Omit<Product, "id" | "rating" | "reviews" | "sold" | "status" | "submittedAt">, status?: ProductStatus) => void;
+  submitProduct: (
+    data: Omit<Product, "id" | "rating" | "reviews" | "sold" | "status" | "submittedAt">,
+    status?: ProductStatus,
+    imageFiles?: File[]
+  ) => Promise<{ ok: boolean; error?: string }>;
   saveSellerProfile: (profile: SellerProfile) => void;
   getSellerProfile: (sellerId: string) => SellerProfile | undefined;
-  updateStatus: (id: string, status: ProductStatus, rejectionReason?: string) => void;
-  deleteProduct: (id: string) => void;
+  updateStatus: (id: string, status: ProductStatus, rejectionReason?: string) => Promise<void>;
+  deleteProduct: (id: string) => Promise<void>;
   getByStatus: (status: ProductStatus) => Product[];
   getBySeller: (sellerId: string) => Product[];
 };
 
 const ProductContext = createContext<ProductContextValue | null>(null);
 
-const DEMO_SELLER_PRODUCTS: Product[] = [
-  {
-    id: "sp-demo-1",
-    name: "Rau muống hữu cơ Vĩnh Lộc",
-    category: "san-pham-vien",
-    price: 12000,
-    originalPrice: 15000,
-    unit: "kg",
-    icon: "🥬",
-    bg: "bg-green-50",
-    tag: "Hữu cơ",
-    tagColor: "bg-green-600 text-white",
-    rating: 0,
-    reviews: 0,
-    sold: 0,
-    desc: "Rau muống trồng theo phương pháp hữu cơ hoàn toàn, không hóa chất, tưới nước giếng khoan sạch.",
-    specs: ["Không thuốc trừ sâu", "Không phân bón hóa học", "Thu hoạch hàng ngày", "Giao hàng nội tỉnh"],
-    origin: "HTX Nông Sản Xanh Thanh Hóa",
-    certifications: ["Hữu cơ VN"],
-    sellerId: "biz-1",
-    sellerName: "HTX Nông Sản Xanh Thanh Hóa",
-    status: "approved",
-    submittedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "sp-demo-2",
-    name: "Dưa chuột VietGAP",
-    category: "san-pham-vien",
-    price: 18000,
-    originalPrice: 22000,
-    unit: "kg",
-    icon: "🥒",
-    bg: "bg-lime-50",
-    tag: "VietGAP",
-    tagColor: "bg-lime-600 text-white",
-    rating: 0,
-    reviews: 0,
-    sold: 0,
-    desc: "Dưa chuột trồng theo tiêu chuẩn VietGAP, thu hoạch đúng độ, quả xanh bóng, giòn ngọt.",
-    specs: ["Chứng nhận VietGAP", "Không dư lượng thuốc", "Quả đều, đẹp", "Giao trong ngày"],
-    origin: "HTX Nông Sản Xanh Thanh Hóa",
-    certifications: ["VietGAP"],
-    sellerId: "biz-1",
-    sellerName: "HTX Nông Sản Xanh Thanh Hóa",
-    status: "approved",
-    submittedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function dbRowToProduct(row: any): Product {
+  const images: string[] = (row.product_images ?? [])
+    .sort((a: { position: number }, b: { position: number }) => a.position - b.position)
+    .map((img: { url: string }) => img.url);
 
-const DEMO_SELLER_PROFILES: Record<string, SellerProfile> = {
-  "biz-1": {
-    id: "biz-1",
-    name: "HTX Nông Sản Xanh Thanh Hóa",
-    description: "Chuyên cung cấp rau sạch VietGAP và các sản phẩm nông sản hữu cơ từ vùng Vĩnh Lộc. Cam kết sản xuất theo quy trình khép kín, không hóa chất, an toàn cho sức khỏe người tiêu dùng.",
-    address: "Xã Vĩnh Tân, Vĩnh Lộc, Thanh Hóa",
-    category: "san-pham-vien",
-    verified: true,
-  },
-};
+  return {
+    id: row.id,
+    name: row.name,
+    category: row.category,
+    type: row.type,
+    price: row.price,
+    originalPrice: row.original_price,
+    unit: row.unit,
+    icon: row.icon,
+    bg: row.bg,
+    tag: row.tag ?? undefined,
+    tagColor: row.tag_color ?? undefined,
+    rating: row.rating,
+    reviews: row.reviews,
+    sold: row.sold,
+    desc: row.description,
+    specs: row.specs ?? [],
+    origin: row.origin,
+    certifications: row.certifications ?? [],
+    imageUrl: images[0],
+    images: images.length > 0 ? images : undefined,
+    sellerId: row.seller_id ?? undefined,
+    sellerName: row.seller_name ?? undefined,
+    status: row.status as ProductStatus,
+    submittedAt: row.submitted_at,
+    rejectionReason: row.rejection_reason ?? undefined,
+  };
+}
+
+function buildSellerProfiles(products: Product[]): Record<string, SellerProfile> {
+  const profiles: Record<string, SellerProfile> = {};
+  for (const p of products) {
+    if (p.sellerId && !profiles[p.sellerId]) {
+      profiles[p.sellerId] = {
+        id: p.sellerId,
+        name: p.sellerName ?? p.origin ?? "Nhà cung cấp",
+        description: "",
+        address: "",
+        category: p.category,
+        verified: p.sellerName === "Viện Nông Nghiệp Thanh Hóa",
+      };
+    }
+  }
+  return profiles;
+}
 
 export function ProductProvider({ children }: { children: React.ReactNode }) {
   const [sellerProducts, setSellerProducts] = useState<Product[]>([]);
   const [sellerProfiles, setSellerProfiles] = useState<Record<string, SellerProfile>>({});
   const [isLoaded, setIsLoaded] = useState(false);
 
-  useEffect(() => {
-    try {
-      const savedProducts = localStorage.getItem(STORAGE_KEY);
-      setSellerProducts(savedProducts ? JSON.parse(savedProducts) : DEMO_SELLER_PRODUCTS);
-      if (!savedProducts) localStorage.setItem(STORAGE_KEY, JSON.stringify(DEMO_SELLER_PRODUCTS));
+  const loadProducts = useCallback(async () => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("products")
+      .select("*, product_images(id, url, position)")
+      .order("submitted_at", { ascending: false });
 
-      const savedProfiles = localStorage.getItem(PROFILES_KEY);
-      setSellerProfiles(savedProfiles ? JSON.parse(savedProfiles) : DEMO_SELLER_PROFILES);
-      if (!savedProfiles) localStorage.setItem(PROFILES_KEY, JSON.stringify(DEMO_SELLER_PROFILES));
-    } catch {
-      setSellerProducts(DEMO_SELLER_PRODUCTS);
-      setSellerProfiles(DEMO_SELLER_PROFILES);
-    } finally {
-      setIsLoaded(true);
-    }
+    if (error || !data) return;
+
+    const products = data.map(dbRowToProduct);
+    setSellerProducts(products);
+    setSellerProfiles(buildSellerProfiles(products));
+    setIsLoaded(true);
   }, []);
 
-  function persistProducts(products: Product[]) {
-    setSellerProducts(products);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
-  }
+  useEffect(() => {
+    loadProducts();
 
-  function persistProfiles(profiles: Record<string, SellerProfile>) {
-    setSellerProfiles(profiles);
-    localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
-  }
+    const supabase = createClient();
+    const channel = supabase
+      .channel("products-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "products" }, () => {
+        loadProducts();
+      })
+      .subscribe();
 
-  function submitProduct(
+    return () => { supabase.removeChannel(channel); };
+  }, [loadProducts]);
+
+  async function submitProduct(
     data: Omit<Product, "id" | "rating" | "reviews" | "sold" | "status" | "submittedAt">,
-    status: ProductStatus = "pending"
-  ) {
-    const newProduct: Product = {
-      ...data,
-      id: "sp-" + Date.now(),
-      rating: 0,
-      reviews: 0,
-      sold: 0,
-      status,
-      submittedAt: new Date().toISOString(),
-    };
-    persistProducts([...sellerProducts, newProduct]);
+    status: ProductStatus = "pending",
+    imageFiles?: File[]
+  ): Promise<{ ok: boolean; error?: string }> {
+    const supabase = createClient();
+
+    const { data: inserted, error } = await supabase
+      .from("products")
+      .insert({
+        name: data.name,
+        category: data.category,
+        type: data.type ?? "product",
+        price: data.price,
+        original_price: data.originalPrice,
+        unit: data.unit,
+        icon: data.icon,
+        bg: data.bg,
+        tag: data.tag ?? null,
+        tag_color: data.tagColor ?? null,
+        description: data.desc,
+        specs: data.specs,
+        origin: data.origin,
+        certifications: data.certifications,
+        seller_id: data.sellerId ?? null,
+        seller_name: data.sellerName ?? null,
+        status,
+      })
+      .select("id")
+      .single();
+
+    if (error || !inserted) return { ok: false, error: error?.message ?? "Lỗi khi lưu sản phẩm" };
+
+    const productId = inserted.id as string;
+
+    // Upload image files if provided
+    const uploadedUrls = imageFiles && imageFiles.length > 0
+      ? await uploadProductImages(imageFiles, productId)
+      : [];
+
+    // Also include pre-existing image URLs (if any passed via data.images)
+    const existingUrls = data.images ?? (data.imageUrl ? [data.imageUrl] : []);
+    const allUrls = [...uploadedUrls, ...existingUrls.filter((u) => u.startsWith("http"))];
+
+    if (allUrls.length > 0) {
+      await supabase.from("product_images").insert(
+        allUrls.map((url, position) => ({ product_id: productId, url, position }))
+      );
+    }
+
+    await loadProducts();
+    return { ok: true };
   }
 
-  function saveSellerProfile(profile: SellerProfile) {
-    persistProfiles({ ...sellerProfiles, [profile.id]: profile });
-  }
+  // No-op: seller profile is stored in profiles + business_profiles tables via registration
+  function saveSellerProfile(_profile: SellerProfile) {}
 
   function getSellerProfile(sellerId: string): SellerProfile | undefined {
     return sellerProfiles[sellerId];
   }
 
-  function updateStatus(id: string, status: ProductStatus, rejectionReason?: string) {
-    persistProducts(
-      sellerProducts.map((p) =>
-        p.id === id ? { ...p, status, rejectionReason: rejectionReason ?? p.rejectionReason } : p
-      )
-    );
+  async function updateStatus(id: string, status: ProductStatus, rejectionReason?: string) {
+    const supabase = createClient();
+    await supabase
+      .from("products")
+      .update({ status, rejection_reason: rejectionReason ?? null })
+      .eq("id", id);
+    await loadProducts();
   }
 
-  function deleteProduct(id: string) {
-    persistProducts(sellerProducts.filter((p) => p.id !== id));
+  async function deleteProduct(id: string) {
+    const supabase = createClient();
+    await supabase.from("products").delete().eq("id", id);
+    setSellerProducts((prev) => prev.filter((p) => p.id !== id));
   }
 
   function getByStatus(status: ProductStatus) {

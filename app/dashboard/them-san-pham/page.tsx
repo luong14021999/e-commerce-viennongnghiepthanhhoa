@@ -37,11 +37,14 @@ type FormState = {
 
 export default function AddProductPage() {
   const { user, isLoading } = useAuth();
-  const { submitProduct, saveSellerProfile } = useProducts();
+  const { submitProduct } = useProducts();
   const router = useRouter();
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [errors, setErrors] = useState<Partial<FormState>>({});
-  const [images, setImages] = useState<string[]>([]);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const [form, setForm] = useState<FormState>({
     name: "", category: "", price: "", originalPrice: "", unit: "kg", icon: "🌾", bg: "bg-green-50",
     tag: "", desc: "", spec1: "", spec2: "", spec3: "", spec4: "", certifications: "",
@@ -52,6 +55,11 @@ export default function AddProductPage() {
     if (!isLoading && (!user || user.role !== "business")) router.push("/dang-nhap");
   }, [user, isLoading, router]);
 
+  // Revoke preview URLs on unmount to avoid memory leaks
+  useEffect(() => {
+    return () => previews.forEach((url) => URL.revokeObjectURL(url));
+  }, [previews]);
+
   if (isLoading || !user || user.role !== "business") return null;
 
   function setField(field: keyof FormState, value: string) {
@@ -61,19 +69,17 @@ export default function AddProductPage() {
 
   function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
-    const remaining = MAX_IMAGES - images.length;
-    files.slice(0, remaining).forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        setImages((prev) => [...prev, ev.target?.result as string]);
-      };
-      reader.readAsDataURL(file);
-    });
+    const remaining = MAX_IMAGES - imageFiles.length;
+    const toAdd = files.slice(0, remaining);
+    setImageFiles((prev) => [...prev, ...toAdd]);
+    setPreviews((prev) => [...prev, ...toAdd.map((f) => URL.createObjectURL(f))]);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   function removeImage(idx: number) {
-    setImages((prev) => prev.filter((_, i) => i !== idx));
+    URL.revokeObjectURL(previews[idx]);
+    setImageFiles((prev) => prev.filter((_, i) => i !== idx));
+    setPreviews((prev) => prev.filter((_, i) => i !== idx));
   }
 
   function validate() {
@@ -87,45 +93,46 @@ export default function AddProductPage() {
     return Object.keys(errs).length === 0;
   }
 
-  function handleSubmit(e: { preventDefault(): void }) {
+  async function handleSubmit(e: { preventDefault(): void }) {
     e.preventDefault();
     if (!user || !validate()) return;
+
+    setSubmitting(true);
+    setSubmitError("");
 
     const price = Number(form.price);
     const originalPrice = form.originalPrice ? Number(form.originalPrice) : price;
     const specs = [form.spec1, form.spec2, form.spec3, form.spec4].filter(Boolean);
     const certs = form.certifications.split(",").map((s) => s.trim()).filter(Boolean);
 
-    submitProduct({
-      name: form.name,
-      category: form.category,
-      price,
-      originalPrice: originalPrice >= price ? originalPrice : price,
-      unit: form.unit,
-      icon: form.icon,
-      bg: form.bg,
-      images: images.length ? images : undefined,
-      imageUrl: images[0] || undefined,
-      tag: form.tag || undefined,
-      tagColor: form.tag ? "bg-green-600 text-white" : undefined,
-      desc: form.desc,
-      specs: specs.length ? specs : [`Đơn vị: ${form.unit}`, `Giá: ${price.toLocaleString("vi-VN")}đ/${form.unit}`],
-      origin: user.business?.businessName ?? user.name,
-      certifications: certs.length ? certs : ["Đang cập nhật"],
-      sellerId: user.id,
-      sellerName: user.business?.businessName ?? user.name,
-    });
+    const result = await submitProduct(
+      {
+        name: form.name,
+        category: form.category,
+        price,
+        originalPrice: originalPrice >= price ? originalPrice : price,
+        unit: form.unit,
+        icon: form.icon,
+        bg: form.bg,
+        tag: form.tag || undefined,
+        tagColor: form.tag ? "bg-green-600 text-white" : undefined,
+        desc: form.desc,
+        specs: specs.length ? specs : [`Đơn vị: ${form.unit}`, `Giá: ${price.toLocaleString("vi-VN")}đ/${form.unit}`],
+        origin: user.business?.businessName ?? user.name,
+        certifications: certs.length ? certs : ["Đang cập nhật"],
+        sellerId: user.id,
+        sellerName: user.business?.businessName ?? user.name,
+      },
+      "pending",
+      imageFiles
+    );
 
-    saveSellerProfile({
-      id: user.id,
-      name: user.business?.businessName ?? user.name,
-      description: user.business?.description ?? "",
-      address: user.business?.businessAddress ?? "",
-      category: user.business?.category ?? "",
-      verified: user.business?.verified ?? false,
-      phone: user.phone,
-      email: user.email,
-    });
+    setSubmitting(false);
+
+    if (!result.ok) {
+      setSubmitError(result.error ?? "Có lỗi xảy ra, vui lòng thử lại.");
+      return;
+    }
 
     setSubmitted(true);
   }
@@ -144,7 +151,7 @@ export default function AddProductPage() {
             <Link href="/dashboard" className="w-full bg-green-700 text-white font-bold py-3 rounded-xl text-sm text-center hover:bg-green-600 transition-colors">
               Về Dashboard để theo dõi →
             </Link>
-            <button onClick={() => { setSubmitted(false); setImages([]); }} className="border-2 border-gray-300 text-gray-700 font-semibold py-3 rounded-xl text-sm hover:bg-gray-50 transition-colors">
+            <button onClick={() => { setSubmitted(false); setImageFiles([]); setPreviews([]); }} className="border-2 border-gray-300 text-gray-700 font-semibold py-3 rounded-xl text-sm hover:bg-gray-50 transition-colors">
               Thêm sản phẩm khác
             </button>
           </div>
@@ -259,44 +266,30 @@ export default function AddProductPage() {
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Ảnh sản phẩm <span className="text-gray-400 font-normal">(tối đa {MAX_IMAGES} ảnh)</span>
               </label>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleImageUpload}
-                className="hidden"
-              />
+              <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden"/>
               <div className="flex flex-wrap gap-3">
-                {images.map((img, idx) => (
+                {previews.map((src, idx) => (
                   <div key={idx} className="relative w-28 h-28 rounded-xl overflow-hidden border-2 border-green-500 group flex-shrink-0">
-                    <img src={img} alt="" className="w-full h-full object-cover" />
+                    <img src={src} alt="" className="w-full h-full object-cover"/>
                     {idx === 0 && (
                       <span className="absolute bottom-0 left-0 right-0 bg-green-600/90 text-white text-xs text-center py-0.5 font-semibold">
                         Ảnh chính
                       </span>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => removeImage(idx)}
-                      className="absolute top-1 right-1 bg-black/60 hover:bg-red-600 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
+                    <button type="button" onClick={() => removeImage(idx)}
+                      className="absolute top-1 right-1 bg-black/60 hover:bg-red-600 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       ✕
                     </button>
                   </div>
                 ))}
-                {images.length < MAX_IMAGES && (
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-28 h-28 rounded-xl border-2 border-dashed border-gray-300 hover:border-green-500 hover:bg-green-50 transition-colors flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:text-green-700 flex-shrink-0"
-                  >
+                {imageFiles.length < MAX_IMAGES && (
+                  <button type="button" onClick={() => fileInputRef.current?.click()}
+                    className="w-28 h-28 rounded-xl border-2 border-dashed border-gray-300 hover:border-green-500 hover:bg-green-50 transition-colors flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:text-green-700 flex-shrink-0">
                     <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                     </svg>
                     <span className="text-xs font-medium text-center leading-tight">
-                      {images.length === 0 ? "Thêm ảnh" : "Thêm ảnh"}<br/>
-                      <span className="text-gray-300">{images.length}/{MAX_IMAGES}</span>
+                      Thêm ảnh<br/><span className="text-gray-300">{imageFiles.length}/{MAX_IMAGES}</span>
                     </span>
                   </button>
                 )}
@@ -337,8 +330,8 @@ export default function AddProductPage() {
               <div className="max-w-48">
                 <div className={`${form.bg} rounded-xl border border-gray-200 overflow-hidden`}>
                   <div className={`${form.bg} flex items-center justify-center h-28 relative overflow-hidden`}>
-                    {images[0] ? (
-                      <img src={images[0]} alt="preview" className="w-full h-full object-cover" />
+                    {previews[0] ? (
+                      <img src={previews[0]} alt="preview" className="w-full h-full object-cover"/>
                     ) : (
                       <span className="text-5xl">{form.icon}</span>
                     )}
@@ -357,13 +350,28 @@ export default function AddProductPage() {
             </div>
           </div>
 
+          {submitError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3">
+              {submitError}
+            </div>
+          )}
+
           {/* Submit */}
           <div className="flex gap-3 pb-8">
             <Link href="/dashboard" className="flex-1 border-2 border-gray-300 text-gray-700 font-semibold py-3 rounded-xl text-sm text-center hover:bg-gray-100 transition-colors">
               Hủy
             </Link>
-            <button type="submit" className="flex-1 bg-green-700 hover:bg-green-600 text-white font-bold py-3 rounded-xl transition-colors text-sm">
-              Đăng sản phẩm →
+            <button type="submit" disabled={submitting}
+              className="flex-1 bg-green-700 hover:bg-green-600 disabled:bg-gray-400 text-white font-bold py-3 rounded-xl transition-colors text-sm flex items-center justify-center gap-2">
+              {submitting ? (
+                <>
+                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                  Đang tải lên...
+                </>
+              ) : "Đăng sản phẩm →"}
             </button>
           </div>
         </form>

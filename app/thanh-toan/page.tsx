@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/app/context/CartContext";
 import { useAuth } from "@/app/context/AuthContext";
 import { formatPrice } from "@/app/lib/data";
+import { createOrderAction } from "@/lib/actions";
 
 const SHIPPING_FEE = 30000;
 const SHIPPING_THRESHOLD = 500000;
@@ -92,10 +93,30 @@ export default function CheckoutPage() {
 
   async function handlePlaceOrder() {
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1500));
+    const result = await createOrderAction({
+      shippingName: form.name,
+      shippingPhone: form.phone,
+      shippingAddress: `${form.address}, ${form.city}`,
+      note: form.note || undefined,
+      totalPrice,
+      shippingFee,
+      grandTotal,
+      paymentMethod,
+      items: items.map(({ product, quantity }) => ({
+        productId: product.id,
+        productName: product.name,
+        productPrice: product.price,
+        productUnit: product.unit,
+        productIcon: product.icon,
+        productImageUrl: product.images?.[0] ?? product.imageUrl,
+        quantity,
+        subtotal: product.price * quantity,
+      })),
+    });
+    setLoading(false);
+    if (!result.ok) return;
     clearCart();
     setStep("success");
-    setLoading(false);
   }
 
   if (step === "success") {
