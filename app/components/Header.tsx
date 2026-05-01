@@ -45,7 +45,7 @@ export default function Header() {
               href="https://viennongnghiepthanhhoa.gov.vn/"
               className="hover:underline hidden sm:block font-semibold"
             >
-              Thông tin viên nông nghiệp
+              Giới thiệu viện nông nghiệp
             </Link>
           </div>
         </div>
