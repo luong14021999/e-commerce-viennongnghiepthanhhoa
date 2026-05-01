@@ -23,7 +23,7 @@ export default function AdminPage() {
   const { sellerProducts, updateStatus, deleteProduct } = useProducts();
   const router = useRouter();
 
-  const [tab, setTab] = useState<FilterTab>("pending");
+  const [tab, setTab] = useState<FilterTab>("all");
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [editProduct, setEditProduct] = useState<Product | null>(null);
