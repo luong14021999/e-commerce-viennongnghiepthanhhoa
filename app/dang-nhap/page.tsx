@@ -76,18 +76,7 @@ function LoginForm() {
           <p className="text-gray-500 text-sm">Chào mừng bạn trở lại!</p>
         </div>
 
-        {/* Demo hint */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 text-sm text-blue-700">
-          <p className="font-semibold mb-1">Tài khoản demo:</p>
-          <p>
-            SĐT: <span className="font-mono font-bold">0912345678</span>
-          </p>
-          <p>
-            Mật khẩu: <span className="font-mono font-bold">123456</span>
-          </p>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-8">
+<div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl flex items-center gap-2">
