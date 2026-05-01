@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 import { useProducts } from "@/app/context/ProductContext";
 import { formatPrice } from "@/app/lib/data";
-import type { ProductStatus } from "@/app/lib/data";
+import type { Product, ProductStatus } from "@/app/lib/data";
+import EditProductModal from "./EditProductModal";
 
 type FilterTab = "all" | ProductStatus;
 
@@ -19,12 +20,15 @@ const TAB_LABELS: { key: FilterTab; label: string; color: string }[] = [
 
 export default function AdminPage() {
   const { user, isLoading } = useAuth();
-  const { sellerProducts, updateStatus } = useProducts();
+  const { sellerProducts, updateStatus, deleteProduct } = useProducts();
   const router = useRouter();
 
   const [tab, setTab] = useState<FilterTab>("pending");
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [editProduct, setEditProduct] = useState<Product | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!isLoading && (!user || user.role !== "admin")) router.push("/dang-nhap");
@@ -49,6 +53,14 @@ export default function AdminPage() {
     updateStatus(rejectId, "rejected", rejectReason || "Không đáp ứng tiêu chuẩn");
     setRejectId(null);
     setRejectReason("");
+  }
+
+  async function handleDelete() {
+    if (!deleteId) return;
+    setDeleting(true);
+    await deleteProduct(deleteId);
+    setDeleteId(null);
+    setDeleting(false);
   }
 
   return (
@@ -172,50 +184,93 @@ export default function AdminPage() {
                   )}
 
                   {/* Action buttons */}
-                  {p.status === "pending" && (
-                    <div className="flex gap-2 mt-4">
-                      <button
-                        onClick={() => handleApprove(p.id)}
-                        className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white font-semibold text-sm px-4 py-2 rounded-xl transition-colors"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
-                        Phê duyệt
-                      </button>
-                      <button
-                        onClick={() => setRejectId(p.id)}
-                        className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-700 font-semibold text-sm px-4 py-2 rounded-xl border border-red-200 transition-colors"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
-                        Từ chối
-                      </button>
-                    </div>
-                  )}
-                  {p.status === "approved" && (
-                    <div className="flex gap-2 mt-4">
+                  <div className="flex gap-2 mt-4 flex-wrap">
+                    {p.status === "pending" && (
+                      <>
+                        <button
+                          onClick={() => handleApprove(p.id)}
+                          className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white font-semibold text-sm px-4 py-2 rounded-xl transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
+                          Phê duyệt
+                        </button>
+                        <button
+                          onClick={() => setRejectId(p.id)}
+                          className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-700 font-semibold text-sm px-4 py-2 rounded-xl border border-red-200 transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+                          Từ chối
+                        </button>
+                      </>
+                    )}
+                    {p.status === "approved" && (
                       <button
                         onClick={() => setRejectId(p.id)}
                         className="flex items-center gap-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 font-semibold text-sm px-4 py-2 rounded-xl border border-gray-200 transition-colors"
                       >
                         Thu hồi phê duyệt
                       </button>
-                    </div>
-                  )}
-                  {p.status === "rejected" && (
-                    <div className="flex gap-2 mt-4">
+                    )}
+                    {p.status === "rejected" && (
                       <button
                         onClick={() => handleApprove(p.id)}
                         className="flex items-center gap-1.5 bg-green-50 hover:bg-green-100 text-green-700 font-semibold text-sm px-4 py-2 rounded-xl border border-green-200 transition-colors"
                       >
                         Phê duyệt lại
                       </button>
-                    </div>
-                  )}
+                    )}
+                    <button
+                      onClick={() => setEditProduct(p)}
+                      className="flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-sm px-4 py-2 rounded-xl border border-blue-200 transition-colors ml-auto"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                      Sửa
+                    </button>
+                    <button
+                      onClick={() => setDeleteId(p.id)}
+                      className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-sm px-4 py-2 rounded-xl border border-red-200 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                      Xóa
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Edit modal */}
+      {editProduct && (
+        <EditProductModal product={editProduct} onClose={() => setEditProduct(null)} />
+      )}
+
+      {/* Delete confirmation modal */}
+      {deleteId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
+            <div className="text-3xl mb-3 text-center">🗑️</div>
+            <h3 className="font-bold text-gray-900 text-lg mb-2 text-center">Xóa sản phẩm?</h3>
+            <p className="text-sm text-gray-500 mb-5 text-center">Hành động này không thể hoàn tác. Sản phẩm sẽ bị xóa vĩnh viễn.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteId(null)} disabled={deleting}
+                className="flex-1 border-2 border-gray-200 text-gray-600 font-semibold py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-sm">
+                Hủy
+              </button>
+              <button onClick={handleDelete} disabled={deleting}
+                className="flex-1 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white font-bold py-2.5 rounded-xl transition-colors text-sm flex items-center justify-center gap-2">
+                {deleting ? (
+                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                ) : "Xóa vĩnh viễn"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reject modal */}
       {rejectId && (

@@ -25,6 +25,12 @@ type ProductContextValue = {
     status?: ProductStatus,
     imageFiles?: File[]
   ) => Promise<{ ok: boolean; error?: string }>;
+  updateProduct: (
+    id: string,
+    data: Partial<Omit<Product, "id" | "status" | "submittedAt" | "rating" | "reviews" | "sold">>,
+    newImageFiles?: File[],
+    deletedImageUrls?: string[]
+  ) => Promise<{ ok: boolean; error?: string }>;
   saveSellerProfile: (profile: SellerProfile) => void;
   getSellerProfile: (sellerId: string) => SellerProfile | undefined;
   updateStatus: (id: string, status: ProductStatus, rejectionReason?: string) => Promise<void>;
@@ -191,6 +197,53 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     await loadProducts();
   }
 
+  async function updateProduct(
+    id: string,
+    data: Partial<Omit<Product, "id" | "status" | "submittedAt" | "rating" | "reviews" | "sold">>,
+    newImageFiles?: File[],
+    deletedImageUrls?: string[]
+  ): Promise<{ ok: boolean; error?: string }> {
+    const supabase = createClient();
+    const { error } = await supabase.from("products").update({
+      name: data.name,
+      category: data.category,
+      type: data.type,
+      price: data.price,
+      original_price: data.originalPrice,
+      unit: data.unit,
+      icon: data.icon,
+      bg: data.bg,
+      tag: data.tag ?? null,
+      tag_color: data.tagColor ?? null,
+      description: data.desc,
+      specs: data.specs,
+      origin: data.origin,
+      certifications: data.certifications,
+    }).eq("id", id);
+
+    if (error) return { ok: false, error: error.message };
+
+    if (deletedImageUrls && deletedImageUrls.length > 0) {
+      await supabase.from("product_images").delete().eq("product_id", id).in("url", deletedImageUrls);
+    }
+
+    if (newImageFiles && newImageFiles.length > 0) {
+      const { data: existing } = await supabase
+        .from("product_images").select("position").eq("product_id", id)
+        .order("position", { ascending: false }).limit(1);
+      const maxPosition = (existing?.[0]?.position ?? -1) as number;
+      const uploadedUrls = await uploadProductImages(newImageFiles, id);
+      if (uploadedUrls.length > 0) {
+        await supabase.from("product_images").insert(
+          uploadedUrls.map((url, i) => ({ product_id: id, url, position: maxPosition + 1 + i }))
+        );
+      }
+    }
+
+    await loadProducts();
+    return { ok: true };
+  }
+
   async function deleteProduct(id: string) {
     const supabase = createClient();
     await supabase.from("products").delete().eq("id", id);
@@ -208,7 +261,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   return (
     <ProductContext.Provider value={{
       sellerProducts, sellerProfiles, isLoaded,
-      submitProduct, saveSellerProfile, getSellerProfile,
+      submitProduct, updateProduct, saveSellerProfile, getSellerProfile,
       updateStatus, deleteProduct, getByStatus, getBySeller,
     }}>
       {children}
