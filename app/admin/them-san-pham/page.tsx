@@ -127,6 +127,7 @@ export default function AdminAddProductPage() {
       return;
     }
 
+    window.scrollTo({ top: 0, behavior: "instant" });
     setSubmitted(true);
   }
 

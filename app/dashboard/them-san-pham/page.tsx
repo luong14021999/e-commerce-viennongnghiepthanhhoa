@@ -119,6 +119,7 @@ export default function AddProductPage() {
       return;
     }
 
+    window.scrollTo({ top: 0, behavior: "instant" });
     setSubmitted(true);
   }
 
