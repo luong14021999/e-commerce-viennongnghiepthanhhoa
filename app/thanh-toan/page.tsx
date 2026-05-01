@@ -26,13 +26,32 @@ export default function CheckoutPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
+  // All hooks must be called unconditionally before any early return
+  const [step, setStep] = useState<Step>("info");
+  const [paymentMethod, setPaymentMethod] = useState("cod");
+  const [loading, setLoading] = useState(false);
+  const [orderCode] = useState("DH" + Date.now().toString().slice(-8));
+  const [form, setForm] = useState({ name: "", phone: "", address: "", city: "Thanh Hóa", note: "" });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Pre-fill form when user data becomes available
+  useEffect(() => {
+    if (user) {
+      setForm((prev) => ({
+        ...prev,
+        name: prev.name || user.name || "",
+        phone: prev.phone || user.phone || "",
+        address: prev.address || user.address || "",
+      }));
+    }
+  }, [user]);
+
   useEffect(() => {
     if (!isLoading && user?.role !== "buyer") {
       router.replace("/dang-nhap?redirect=/thanh-toan");
     }
   }, [user, isLoading, router]);
 
-  // Don't render anything until auth state is known to prevent flash + incorrect render
   if (isLoading || user?.role !== "buyer") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -40,21 +59,6 @@ export default function CheckoutPage() {
       </div>
     );
   }
-
-  const [step, setStep] = useState<Step>("info");
-  const [paymentMethod, setPaymentMethod] = useState("cod");
-  const [loading, setLoading] = useState(false);
-  const [orderCode] = useState("DH" + Date.now().toString().slice(-8));
-
-  const [form, setForm] = useState({
-    name: user?.name ?? "",
-    phone: user?.phone ?? "",
-    address: user?.address ?? "",
-    city: "Thanh Hóa",
-    note: "",
-  });
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
   function setField(field: string, value: string) {
     setForm((f) => ({ ...f, [field]: value }));
