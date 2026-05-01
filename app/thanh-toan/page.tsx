@@ -47,8 +47,10 @@ export default function CheckoutPage() {
   }, [user]);
 
   useEffect(() => {
-    if (!isLoading && user?.role !== "buyer") {
-      router.replace("/dang-nhap?redirect=/thanh-toan");
+    if (!isLoading && !user) {
+      router.replace("/dang-nhap");
+    } else if (!isLoading && user && user.role !== "buyer") {
+      router.replace("/");
     }
   }, [user, isLoading, router]);
 

@@ -33,8 +33,7 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isProtected =
     path.startsWith("/dashboard") ||
-    path.startsWith("/admin") ||
-    path === "/thanh-toan";
+    path.startsWith("/admin");
 
   if (!user && isProtected) {
     const loginUrl = new URL("/dang-nhap", request.url);
