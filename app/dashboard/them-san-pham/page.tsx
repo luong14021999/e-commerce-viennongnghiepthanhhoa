@@ -7,18 +7,6 @@ import { useAuth } from "@/app/context/AuthContext";
 import { useProducts } from "@/app/context/ProductContext";
 import { categories } from "@/app/lib/data";
 
-const ICONS = ["🌾", "🌽", "🥬", "🍊", "🍚", "🌱", "🍃", "🍯", "🐟", "🥒", "🍅", "🥕", "🧅", "🌿", "🫚", "🧄"];
-const BG_OPTIONS = [
-  { label: "Xanh lá", value: "bg-green-50" },
-  { label: "Vàng", value: "bg-yellow-50" },
-  { label: "Cam", value: "bg-orange-50" },
-  { label: "Xanh ngọc", value: "bg-teal-50" },
-  { label: "Xanh dương", value: "bg-blue-50" },
-  { label: "Xanh lime", value: "bg-lime-50" },
-  { label: "Hổ phách", value: "bg-amber-50" },
-  { label: "Đỏ nhạt", value: "bg-red-50" },
-];
-
 const MAX_IMAGES = 6;
 
 type FormState = {
@@ -27,8 +15,6 @@ type FormState = {
   price: string;
   originalPrice: string;
   unit: string;
-  icon: string;
-  bg: string;
   tag: string;
   desc: string;
   spec1: string; spec2: string; spec3: string; spec4: string;
@@ -46,7 +32,7 @@ export default function AddProductPage() {
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [form, setForm] = useState<FormState>({
-    name: "", category: "", price: "", originalPrice: "", unit: "kg", icon: "🌾", bg: "bg-green-50",
+    name: "", category: "", price: "", originalPrice: "", unit: "kg",
     tag: "", desc: "", spec1: "", spec2: "", spec3: "", spec4: "", certifications: "",
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -55,7 +41,6 @@ export default function AddProductPage() {
     if (!isLoading && (!user || user.role !== "business")) router.push("/dang-nhap");
   }, [user, isLoading, router]);
 
-  // Revoke preview URLs on unmount to avoid memory leaks
   useEffect(() => {
     return () => previews.forEach((url) => URL.revokeObjectURL(url));
   }, [previews]);
@@ -112,8 +97,8 @@ export default function AddProductPage() {
         price,
         originalPrice: originalPrice >= price ? originalPrice : price,
         unit: form.unit,
-        icon: form.icon,
-        bg: form.bg,
+        icon: "🌾",
+        bg: "bg-green-50",
         tag: form.tag || undefined,
         tagColor: form.tag ? "bg-green-600 text-white" : undefined,
         desc: form.desc,
@@ -257,97 +242,36 @@ export default function AddProductPage() {
             </div>
           </div>
 
-          {/* Appearance */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
-            <h2 className="font-bold text-gray-900 flex items-center gap-2"><span>🎨</span> Hiển thị sản phẩm</h2>
-
-            {/* Multi-image upload */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Ảnh sản phẩm <span className="text-gray-400 font-normal">(tối đa {MAX_IMAGES} ảnh)</span>
-              </label>
-              <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden"/>
-              <div className="flex flex-wrap gap-3">
-                {previews.map((src, idx) => (
-                  <div key={idx} className="relative w-28 h-28 rounded-xl overflow-hidden border-2 border-green-500 group flex-shrink-0">
-                    <img src={src} alt="" className="w-full h-full object-cover"/>
-                    {idx === 0 && (
-                      <span className="absolute bottom-0 left-0 right-0 bg-green-600/90 text-white text-xs text-center py-0.5 font-semibold">
-                        Ảnh chính
-                      </span>
-                    )}
-                    <button type="button" onClick={() => removeImage(idx)}
-                      className="absolute top-1 right-1 bg-black/60 hover:bg-red-600 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      ✕
-                    </button>
-                  </div>
-                ))}
-                {imageFiles.length < MAX_IMAGES && (
-                  <button type="button" onClick={() => fileInputRef.current?.click()}
-                    className="w-28 h-28 rounded-xl border-2 border-dashed border-gray-300 hover:border-green-500 hover:bg-green-50 transition-colors flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:text-green-700 flex-shrink-0">
-                    <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                    </svg>
-                    <span className="text-xs font-medium text-center leading-tight">
-                      Thêm ảnh<br/><span className="text-gray-300">{imageFiles.length}/{MAX_IMAGES}</span>
-                    </span>
+          {/* Images */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+            <h2 className="font-bold text-gray-900 flex items-center gap-2"><span>🖼️</span> Ảnh sản phẩm <span className="text-gray-400 font-normal text-sm">(tối đa {MAX_IMAGES} ảnh)</span></h2>
+            <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden"/>
+            <div className="flex flex-wrap gap-3">
+              {previews.map((src, idx) => (
+                <div key={idx} className="relative w-28 h-28 rounded-xl overflow-hidden border-2 border-green-500 group flex-shrink-0">
+                  <img src={src} alt="" className="w-full h-full object-cover"/>
+                  {idx === 0 && (
+                    <span className="absolute bottom-0 left-0 right-0 bg-green-600/90 text-white text-xs text-center py-0.5 font-semibold">Ảnh chính</span>
+                  )}
+                  <button type="button" onClick={() => removeImage(idx)}
+                    className="absolute top-1 right-1 bg-black/60 hover:bg-red-600 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    ✕
                   </button>
-                )}
-              </div>
-              <p className="text-xs text-gray-400 mt-2">Ảnh đầu tiên sẽ là ảnh chính. Nếu không tải ảnh, biểu tượng emoji bên dưới sẽ được dùng thay thế.</p>
-            </div>
-
-            {/* Emoji icon (fallback) */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Biểu tượng sản phẩm <span className="text-gray-400 font-normal">(dùng khi không có ảnh)</span>
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {ICONS.map((icon) => (
-                  <button key={icon} type="button" onClick={() => setField("icon", icon)}
-                    className={`w-10 h-10 text-xl rounded-xl flex items-center justify-center border-2 transition-all ${form.icon === icon ? "border-green-600 bg-green-50 scale-110" : "border-gray-200 hover:border-green-300"}`}>
-                    {icon}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Màu nền thẻ sản phẩm</label>
-              <div className="flex flex-wrap gap-2">
-                {BG_OPTIONS.map((opt) => (
-                  <button key={opt.value} type="button" onClick={() => setField("bg", opt.value)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border-2 ${opt.value} transition-all ${form.bg === opt.value ? "border-green-600 ring-2 ring-green-200" : "border-gray-200 hover:border-green-300"}`}>
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Preview */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Xem trước thẻ sản phẩm</label>
-              <div className="max-w-48">
-                <div className={`${form.bg} rounded-xl border border-gray-200 overflow-hidden`}>
-                  <div className={`${form.bg} flex items-center justify-center h-28 relative overflow-hidden`}>
-                    {previews[0] ? (
-                      <img src={previews[0]} alt="preview" className="w-full h-full object-cover"/>
-                    ) : (
-                      <span className="text-5xl">{form.icon}</span>
-                    )}
-                    {form.tag && <span className="absolute top-2 left-2 text-xs font-bold px-2 py-0.5 rounded bg-green-600 text-white">{form.tag}</span>}
-                  </div>
-                  <div className="p-3">
-                    <p className="text-sm font-semibold text-gray-800 line-clamp-2">{form.name || "Tên sản phẩm"}</p>
-                    <p className="text-xs text-gray-400 mt-0.5 truncate">{user.business?.businessName}</p>
-                    <p className="text-sm font-bold text-red-600 mt-1">
-                      {form.price ? Number(form.price).toLocaleString("vi-VN") + "đ" : "0đ"}
-                      <span className="text-xs text-gray-400 font-normal">/{form.unit || "kg"}</span>
-                    </p>
-                  </div>
                 </div>
-              </div>
+              ))}
+              {imageFiles.length < MAX_IMAGES && (
+                <button type="button" onClick={() => fileInputRef.current?.click()}
+                  className="w-28 h-28 rounded-xl border-2 border-dashed border-gray-300 hover:border-green-500 hover:bg-green-50 transition-colors flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:text-green-700 flex-shrink-0">
+                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                  <span className="text-xs font-medium text-center leading-tight">
+                    Thêm ảnh<br/><span className="text-gray-300">{imageFiles.length}/{MAX_IMAGES}</span>
+                  </span>
+                </button>
+              )}
             </div>
+            <p className="text-xs text-gray-400">Ảnh đầu tiên sẽ là ảnh chính hiển thị trên thẻ sản phẩm.</p>
           </div>
 
           {submitError && (
@@ -356,7 +280,6 @@ export default function AddProductPage() {
             </div>
           )}
 
-          {/* Submit */}
           <div className="flex gap-3 pb-8">
             <Link href="/dashboard" className="flex-1 border-2 border-gray-300 text-gray-700 font-semibold py-3 rounded-xl text-sm text-center hover:bg-gray-100 transition-colors">
               Hủy

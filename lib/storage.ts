@@ -13,7 +13,10 @@ export async function uploadProductImages(files: File[], productId: string): Pro
       .from("product-images")
       .upload(path, file, { upsert: true });
 
-    if (error) continue;
+    if (error) {
+      console.error("Storage upload error:", error.message, error);
+      continue;
+    }
 
     const { data } = supabase.storage.from("product-images").getPublicUrl(path);
     urls.push(data.publicUrl);

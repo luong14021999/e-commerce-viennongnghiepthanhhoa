@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import Link from "next/link";
 import ProductCard from "@/app/components/ProductCard";
 import { useProducts } from "@/app/context/ProductContext";
-import { products as staticProducts, categories } from "@/app/lib/data";
+import { categories } from "@/app/lib/data";
 
 const serviceCategories = categories.filter((c) => c.type === "service");
 const productCategories = categories.filter((c) => c.type === "product");
@@ -12,16 +12,13 @@ const productCategories = categories.filter((c) => c.type === "product");
 export default function CategorySections() {
   const { sellerProducts } = useProducts();
 
-  // Institute-uploaded products (admin uploads always set sellerName to this constant)
-  const instituteProducts = useMemo(
-    () => sellerProducts.filter((p) => p.sellerName === "Viện Nông Nghiệp Thanh Hóa" && p.status === "approved"),
+  const approvedProducts = useMemo(
+    () => sellerProducts.filter((p) => p.status === "approved"),
     [sellerProducts]
   );
 
   function getItems(categoryId: string) {
-    const fromStatic = staticProducts.filter((p) => p.category === categoryId);
-    const fromAdmin = instituteProducts.filter((p) => p.category === categoryId);
-    return [...fromStatic, ...fromAdmin];
+    return approvedProducts.filter((p) => p.category === categoryId);
   }
 
   return (

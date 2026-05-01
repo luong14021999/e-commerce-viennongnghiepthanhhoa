@@ -4,7 +4,7 @@ import { useState, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import ProductCard from "@/app/components/ProductCard";
-import { products as baseProducts, categories, formatPrice } from "@/app/lib/data";
+import { categories, formatPrice } from "@/app/lib/data";
 import { useProducts } from "@/app/context/ProductContext";
 
 const sortOptions = [
@@ -34,13 +34,7 @@ function ProductsContent() {
 
   const { getByStatus, sellerProfiles, getBySeller } = useProducts();
 
-  // Merge base catalog with approved seller products (deduplicate by id)
-  const allProducts = useMemo(() => {
-    const approvedSeller = getByStatus("approved");
-    const baseIds = new Set(baseProducts.map((p) => p.id));
-    const newSeller = approvedSeller.filter((p) => !baseIds.has(p.id));
-    return [...baseProducts, ...newSeller];
-  }, [getByStatus]);
+  const allProducts = useMemo(() => getByStatus("approved"), [getByStatus]);
 
   // Unique seller IDs that have at least one approved product
   const businessIds = useMemo(() => {

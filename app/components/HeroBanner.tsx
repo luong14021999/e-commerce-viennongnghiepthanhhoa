@@ -2,7 +2,35 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { banners } from "@/app/lib/data";
+const banners = [
+  {
+    badge: "🌾 Viện Nông Nghiệp Thanh Hóa",
+    title: "Nông sản sạch – Trực tiếp từ Viện",
+    subtitle: "Giống cây trồng, vật nuôi chất lượng cao",
+    desc: "Sản phẩm được kiểm định và chứng nhận bởi Viện Nông Nghiệp Thanh Hóa",
+    href: "/san-pham",
+    cta: "Khám phá sản phẩm",
+    bg: "from-green-800 to-green-600",
+  },
+  {
+    badge: "🔬 Dịch vụ chuyên nghiệp",
+    title: "Tư vấn & Chuyển giao Công nghệ",
+    subtitle: "Hỗ trợ kỹ thuật nông nghiệp toàn diện",
+    desc: "Đội ngũ chuyên gia giàu kinh nghiệm sẵn sàng hỗ trợ bà con nông dân",
+    href: "/san-pham?category=tu-van",
+    cta: "Xem dịch vụ",
+    bg: "from-teal-800 to-teal-600",
+  },
+  {
+    badge: "🏪 Doanh nghiệp đối tác",
+    title: "Sàn Nông Sản Thanh Hóa",
+    subtitle: "Kết nối doanh nghiệp – Nông dân – Thị trường",
+    desc: "Đăng ký để đưa sản phẩm của bạn lên sàn và tiếp cận hàng nghìn khách hàng",
+    href: "/dang-ky",
+    cta: "Đăng ký bán hàng",
+    bg: "from-amber-700 to-orange-600",
+  },
+];
 
 export default function HeroBanner() {
   const [current, setCurrent] = useState(0);
