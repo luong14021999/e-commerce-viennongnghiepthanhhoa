@@ -124,7 +124,7 @@ export default function AdminAddProductPage() {
       certifications: certs.length ? certs : ["Viện Nông Nghiệp Thanh Hóa"],
       sellerId: user.id,
       sellerName: INSTITUTE_NAME,
-    });
+    }, "approved");
 
     saveSellerProfile({
       id: user.id,

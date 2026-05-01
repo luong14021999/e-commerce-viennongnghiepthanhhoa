@@ -143,8 +143,8 @@ export default function DashboardPage() {
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className={`${p.bg} w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center text-xl flex-shrink-0`}>
-                              {p.imageUrl
-                                ? <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+                              {(p.images?.[0] ?? p.imageUrl)
+                                ? <img src={p.images?.[0] ?? p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
                                 : <span>{p.icon}</span>
                               }
                             </div>
@@ -193,12 +193,12 @@ export default function DashboardPage() {
 
         {/* Info box */}
         <div className="mt-6 bg-white rounded-2xl border border-gray-200 p-6">
-          <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2"><span>🚀</span> Đăng sản phẩm – hiển thị ngay</h3>
+          <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2"><span>🚀</span> Quy trình đăng sản phẩm</h3>
           <div className="flex flex-col sm:flex-row gap-4 text-sm">
             {[
               { step: "1", icon: "📝", title: "Điền thông tin", desc: "Tên, danh mục, giá, mô tả và tải ảnh sản phẩm" },
-              { step: "2", icon: "⚡", title: "Hiển thị ngay lập tức", desc: "Sản phẩm được đăng công khai ngay sau khi lưu" },
-              { step: "3", icon: "🏪", title: "Gian hàng của bạn", desc: "Xem toàn bộ sản phẩm trên trang gian hàng riêng" },
+              { step: "2", icon: "⏳", title: "Chờ kiểm duyệt", desc: "Viện Nông Nghiệp xem xét và phê duyệt trong 1–2 ngày" },
+              { step: "3", icon: "🏪", title: "Hiển thị công khai", desc: "Sản phẩm xuất hiện trên trang chủ và gian hàng của bạn" },
             ].map((s) => (
               <div key={s.step} className="flex items-start gap-3 flex-1">
                 <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-700 font-bold text-sm flex-shrink-0">{s.step}</div>

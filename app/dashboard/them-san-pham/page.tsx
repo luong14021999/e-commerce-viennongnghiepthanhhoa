@@ -134,23 +134,19 @@ export default function AddProductPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4 py-16">
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-10 max-w-md w-full text-center">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5 text-4xl">✅</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Sản phẩm đã được đăng!</h2>
-          <p className="text-gray-500 text-sm mb-6">
-            Sản phẩm của bạn đã <span className="font-semibold text-green-700">hiển thị công khai</span> ngay trên hệ thống và trong gian hàng của doanh nghiệp.
+          <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-5 text-4xl">⏳</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Đã gửi yêu cầu duyệt!</h2>
+          <p className="text-gray-500 text-sm mb-4">
+            Sản phẩm của bạn đang <span className="font-semibold text-amber-600">chờ Viện Nông Nghiệp kiểm duyệt</span>. Thông thường mất 1–2 ngày làm việc.
           </p>
+          <p className="text-xs text-gray-400 mb-6">Sau khi được duyệt, sản phẩm sẽ tự động hiển thị trong mục "Sản phẩm từ doanh nghiệp đối tác" trên trang chủ.</p>
           <div className="flex flex-col gap-3">
-            <Link href={`/doanh-nghiep/${user.id}`} className="w-full bg-green-700 text-white font-bold py-3 rounded-xl text-sm text-center hover:bg-green-600 transition-colors">
-              Xem gian hàng của tôi →
+            <Link href="/dashboard" className="w-full bg-green-700 text-white font-bold py-3 rounded-xl text-sm text-center hover:bg-green-600 transition-colors">
+              Về Dashboard để theo dõi →
             </Link>
-            <div className="flex gap-3">
-              <Link href="/dashboard" className="flex-1 border-2 border-gray-300 text-gray-700 font-semibold py-3 rounded-xl text-sm text-center hover:bg-gray-50 transition-colors">
-                Về Dashboard
-              </Link>
-              <button onClick={() => { setSubmitted(false); setImages([]); }} className="flex-1 border-2 border-green-700 text-green-700 font-semibold py-3 rounded-xl text-sm hover:bg-green-50 transition-colors">
-                Thêm sản phẩm khác
-              </button>
-            </div>
+            <button onClick={() => { setSubmitted(false); setImages([]); }} className="border-2 border-gray-300 text-gray-700 font-semibold py-3 rounded-xl text-sm hover:bg-gray-50 transition-colors">
+              Thêm sản phẩm khác
+            </button>
           </div>
         </div>
       </div>

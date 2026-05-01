@@ -21,7 +21,7 @@ type ProductContextValue = {
   sellerProducts: Product[];
   sellerProfiles: Record<string, SellerProfile>;
   isLoaded: boolean;
-  submitProduct: (data: Omit<Product, "id" | "rating" | "reviews" | "sold" | "status" | "submittedAt">) => void;
+  submitProduct: (data: Omit<Product, "id" | "rating" | "reviews" | "sold" | "status" | "submittedAt">, status?: ProductStatus) => void;
   saveSellerProfile: (profile: SellerProfile) => void;
   getSellerProfile: (sellerId: string) => SellerProfile | undefined;
   updateStatus: (id: string, status: ProductStatus, rejectionReason?: string) => void;
@@ -124,14 +124,17 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
   }
 
-  function submitProduct(data: Omit<Product, "id" | "rating" | "reviews" | "sold" | "status" | "submittedAt">) {
+  function submitProduct(
+    data: Omit<Product, "id" | "rating" | "reviews" | "sold" | "status" | "submittedAt">,
+    status: ProductStatus = "pending"
+  ) {
     const newProduct: Product = {
       ...data,
       id: "sp-" + Date.now(),
       rating: 0,
       reviews: 0,
       sold: 0,
-      status: "approved",
+      status,
       submittedAt: new Date().toISOString(),
     };
     persistProducts([...sellerProducts, newProduct]);
