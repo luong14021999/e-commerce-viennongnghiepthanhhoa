@@ -24,6 +24,7 @@ export default function ProductDetailClient({
   const router = useRouter();
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const [activeImg, setActiveImg] = useState(0);
 
   // Fall back to seller products from context if not in base catalog
   const product = initialProduct ?? sellerProducts.find((p) => p.id === productId) ?? null;
@@ -40,6 +41,7 @@ export default function ProductDetailClient({
   // Alias so closures below see Product (not Product | null)
   const p = product;
   const isService = p.type === "service";
+  const allImages = (p.images && p.images.length > 0) ? p.images : p.imageUrl ? [p.imageUrl] : [];
   const discount = isService ? 0 : discountPercent(p.originalPrice, p.price);
 
   function handleAddToCart() {
@@ -71,21 +73,37 @@ export default function ProductDetailClient({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid md:grid-cols-2 gap-8 mb-10">
           {/* Image / icon area */}
-          <div className={`${p.bg} rounded-2xl flex items-center justify-center h-72 md:h-96 relative border border-gray-200 overflow-hidden`}>
-            {p.imageUrl ? (
-              <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-8xl md:text-9xl">{p.icon}</span>
-            )}
-            {p.tag && (
-              <span className={`absolute top-4 left-4 text-sm font-bold px-3 py-1 rounded ${p.tagColor}`}>
-                {p.tag}
-              </span>
-            )}
-            {!isService && discount > 0 && (
-              <span className="absolute top-4 right-4 bg-red-500 text-white text-sm font-bold px-2.5 py-1 rounded-lg">
-                -{discount}%
-              </span>
+          <div>
+            <div className={`${p.bg} rounded-2xl flex items-center justify-center h-64 md:h-80 relative border border-gray-200 overflow-hidden`}>
+              {allImages.length > 0 ? (
+                <img src={allImages[activeImg]} alt={p.name} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-8xl md:text-9xl">{p.icon}</span>
+              )}
+              {p.tag && (
+                <span className={`absolute top-4 left-4 text-sm font-bold px-3 py-1 rounded ${p.tagColor}`}>
+                  {p.tag}
+                </span>
+              )}
+              {!isService && discount > 0 && (
+                <span className="absolute top-4 right-4 bg-red-500 text-white text-sm font-bold px-2.5 py-1 rounded-lg">
+                  -{discount}%
+                </span>
+              )}
+            </div>
+            {allImages.length > 1 && (
+              <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
+                {allImages.map((img, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setActiveImg(i)}
+                    className={`flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${i === activeImg ? "border-green-600 ring-2 ring-green-200" : "border-gray-200 hover:border-green-400"}`}
+                  >
+                    <img src={img} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
             )}
           </div>
 

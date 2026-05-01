@@ -58,9 +58,16 @@ export default function AdminPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex items-center justify-between flex-wrap gap-3">
           <div>
             <p className="text-gray-400 text-xs uppercase tracking-wider mb-0.5">Viện Nông Nghiệp Thanh Hóa</p>
-            <h1 className="text-xl font-bold">Bảng quản trị – Kiểm duyệt sản phẩm</h1>
+            <h1 className="text-xl font-bold">Bảng quản trị</h1>
           </div>
-          <div className="flex items-center gap-3 text-sm">
+          <div className="flex items-center gap-3 text-sm flex-wrap">
+            <Link
+              href="/admin/them-san-pham"
+              className="bg-green-600 hover:bg-green-500 text-white font-semibold px-4 py-2 rounded-xl transition-colors flex items-center gap-1.5"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/></svg>
+              Đăng sản phẩm / dịch vụ
+            </Link>
             <span className="text-gray-400">Xin chào, <span className="text-white font-semibold">{user.name}</span></span>
             <Link href="/" className="text-gray-400 hover:text-white transition-colors">← Về trang chủ</Link>
           </div>
@@ -114,8 +121,8 @@ export default function AdminPage() {
               <div key={p.id} className="bg-white rounded-2xl border border-gray-200 p-5 flex gap-4 items-start flex-wrap md:flex-nowrap">
                 {/* Thumbnail */}
                 <div className={`${p.bg} w-16 h-16 rounded-xl overflow-hidden flex items-center justify-center text-3xl flex-shrink-0`}>
-                  {p.imageUrl
-                    ? <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+                  {(p.images?.[0] ?? p.imageUrl)
+                    ? <img src={p.images?.[0] ?? p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
                     : p.icon
                   }
                 </div>

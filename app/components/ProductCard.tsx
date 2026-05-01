@@ -14,8 +14,8 @@ export default function ProductCard({ product }: { product: Product }) {
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col group">
       {/* Image area */}
       <Link href={`/san-pham/${product.id}`} className={`${product.bg} flex items-center justify-center h-40 relative overflow-hidden`}>
-        {product.imageUrl ? (
-          <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+        {(product.images?.[0] ?? product.imageUrl) ? (
+          <img src={product.images?.[0] ?? product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
         ) : (
           <span className="text-6xl">{product.icon}</span>
         )}

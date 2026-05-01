@@ -20,6 +20,7 @@ export type Product = {
   origin: string;
   certifications: string[];
   imageUrl?: string;
+  images?: string[];
   // Seller fields — only present on business-uploaded products
   sellerId?: string;
   sellerName?: string;

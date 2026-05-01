@@ -8,7 +8,7 @@ export default function BusinessProductsSection() {
   const { getByStatus, sellerProfiles } = useProducts();
 
   const businesses = useMemo(() => {
-    const approved = getByStatus("approved");
+    const approved = getByStatus("approved").filter((p) => !p.sellerId?.startsWith("admin-"));
     const byId: Record<string, typeof approved> = {};
     for (const p of approved) {
       if (!p.sellerId) continue;
