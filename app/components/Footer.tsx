@@ -30,7 +30,10 @@ export default function Footer() {
               chất lượng và vật tư nông nghiệp đảm bảo.
             </p>
             <div className="space-y-1.5 text-sm">
-              <p>📍 Số 1 Lê Hoàn, TP. Thanh Hóa</p>
+              <p>
+                📍 số 271, đường Nguyễn Phục, phường Quảng Thắng, TP. Thanh Hóa,
+                tỉnh Thanh Hóa.
+              </p>
               <p>
                 📞{' '}
                 <a href="tel:02373123456" className="hover:text-green-400">
