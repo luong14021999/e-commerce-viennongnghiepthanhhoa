@@ -145,6 +145,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error.message.toLowerCase().includes('already')) {
         return { ok: false, error: 'Số điện thoại đã được đăng ký' };
       }
+      if (error.message.toLowerCase().includes('database')) {
+        return { ok: false, error: 'Lỗi hệ thống, vui lòng thử lại sau' };
+      }
       return { ok: false, error: error.message };
     }
     return { ok: true };
@@ -168,6 +171,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) {
       if (error.message.toLowerCase().includes('already')) {
         return { ok: false, error: 'Số điện thoại đã được đăng ký' };
+      }
+      if (error.message.toLowerCase().includes('database')) {
+        return { ok: false, error: 'Lỗi hệ thống, vui lòng thử lại sau' };
       }
       return { ok: false, error: error.message };
     }

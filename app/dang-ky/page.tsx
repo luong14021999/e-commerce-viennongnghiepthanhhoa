@@ -10,7 +10,7 @@ import { categories } from '@/app/lib/data';
 type Role = 'buyer' | 'business';
 
 export default function RegisterPage() {
-  const { registerBuyer, registerBusiness, user, isLoading } = useAuth();
+  const { registerBuyer, registerBusiness, login, user, isLoading } = useAuth();
   const router = useRouter();
   const [role, setRole] = useState<Role>('buyer');
 
@@ -86,11 +86,21 @@ export default function RegisterPage() {
             category: form.category,
             description: form.description,
           });
-    setLoading(false);
     if (!result.ok) {
+      setLoading(false);
       setError(result.error ?? 'Đăng ký thất bại');
       return;
     }
+
+    // Try auto-login after successful registration
+    const loginResult = await login(form.phone, form.password);
+    setLoading(false);
+    if (loginResult.ok) {
+      // onAuthStateChange + useEffect will handle redirect
+      return;
+    }
+    // Fallback: go to login page
+    router.push('/dang-nhap');
   }
 
   return (
