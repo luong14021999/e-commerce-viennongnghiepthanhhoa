@@ -3,15 +3,75 @@
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 
-export async function autoConfirmEmail(userId: string): Promise<void> {
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!serviceRoleKey) return;
-  const admin = createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    serviceRoleKey,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
-  await admin.auth.admin.updateUserById(userId, { email_confirm: true });
+function getAdminClient() {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set");
+  return createAdminClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
+
+type RegisterInput = {
+  phone: string;
+  password: string;
+  name: string;
+  email?: string;
+  role: "buyer" | "business";
+};
+
+export async function registerUserAction(
+  input: RegisterInput
+): Promise<{ ok: boolean; error?: string; userId?: string }> {
+  try {
+    const admin = getAdminClient();
+    const { data, error } = await admin.auth.admin.createUser({
+      email: `${input.phone}@vnn.vn`,
+      password: input.password,
+      email_confirm: true,
+      user_metadata: {
+        name: input.name,
+        phone: input.phone,
+        email: input.email ?? "",
+        role: input.role,
+      },
+    });
+    if (error) {
+      if (error.message.toLowerCase().includes("already")) {
+        return { ok: false, error: "Số điện thoại đã được đăng ký" };
+      }
+      return { ok: false, error: error.message };
+    }
+    return { ok: true, userId: data.user.id };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Lỗi hệ thống" };
+  }
+}
+
+export async function insertBusinessProfileAction(
+  userId: string,
+  data: {
+    businessName: string;
+    taxCode: string;
+    businessAddress: string;
+    category: string;
+    description: string;
+  }
+): Promise<void> {
+  const admin = getAdminClient();
+  // Use service-role client to bypass RLS
+  const supabase = createAdminClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  await supabase.from("business_profiles").upsert({
+    id: userId,
+    business_name: data.businessName,
+    tax_code: data.taxCode,
+    business_address: data.businessAddress,
+    category: data.category,
+    description: data.description,
+    verified: false,
+  });
+  void admin; // satisfy linter
 }
 
 type OrderItem = {

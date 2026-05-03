@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { autoConfirmEmail } from '@/lib/actions';
+import { registerUserAction, insertBusinessProfileAction } from '@/lib/actions';
 
 export type UserRole = 'buyer' | 'business' | 'admin';
 
@@ -128,69 +128,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function registerBuyer(data: BuyerRegisterData) {
-    const supabase = createClient();
-    const email = `${data.phone}@vnn.vn`;
-    const { data: signUpData, error } = await supabase.auth.signUp({
-      email,
+    return registerUserAction({
+      phone: data.phone,
       password: data.password,
-      options: {
-        data: {
-          name: data.name,
-          phone: data.phone,
-          email: data.email,
-          role: 'buyer',
-        },
-      },
+      name: data.name,
+      email: data.email,
+      role: 'buyer',
     });
-    if (error) {
-      if (error.message.toLowerCase().includes('already')) {
-        return { ok: false, error: 'Số điện thoại đã được đăng ký' };
-      }
-      if (error.message.toLowerCase().includes('database')) {
-        return { ok: false, error: 'Lỗi hệ thống, vui lòng thử lại sau' };
-      }
-      return { ok: false, error: error.message };
-    }
-    if (signUpData?.user) await autoConfirmEmail(signUpData.user.id);
-    return { ok: true };
   }
 
   async function registerBusiness(data: BusinessRegisterData) {
-    const supabase = createClient();
-    const email = `${data.phone}@vnn.vn`;
-    const { data: authData, error } = await supabase.auth.signUp({
-      email,
+    const result = await registerUserAction({
+      phone: data.phone,
       password: data.password,
-      options: {
-        data: {
-          name: data.name,
-          phone: data.phone,
-          email: data.email,
-          role: 'business',
-        },
-      },
+      name: data.name,
+      email: data.email,
+      role: 'business',
     });
-    if (error) {
-      if (error.message.toLowerCase().includes('already')) {
-        return { ok: false, error: 'Số điện thoại đã được đăng ký' };
-      }
-      if (error.message.toLowerCase().includes('database')) {
-        return { ok: false, error: 'Lỗi hệ thống, vui lòng thử lại sau' };
-      }
-      return { ok: false, error: error.message };
-    }
-    if (authData.user) {
-      await autoConfirmEmail(authData.user.id);
-      await supabase.from('business_profiles').upsert({
-        id: authData.user.id,
-        business_name: data.businessName,
-        tax_code: data.taxCode,
-        business_address: data.businessAddress,
-        category: data.category,
-        description: data.description,
-        verified: false,
-      });
-    }
+    if (!result.ok || !result.userId) return result;
+    await insertBusinessProfileAction(result.userId, {
+      businessName: data.businessName,
+      taxCode: data.taxCode,
+      businessAddress: data.businessAddress,
+      category: data.category,
+      description: data.description,
+    });
     return { ok: true };
   }
 
