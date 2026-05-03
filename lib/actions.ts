@@ -1,6 +1,18 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
+
+export async function autoConfirmEmail(userId: string): Promise<void> {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceRoleKey) return;
+  const admin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    serviceRoleKey,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+  await admin.auth.admin.updateUserById(userId, { email_confirm: true });
+}
 
 type OrderItem = {
   productId?: string;

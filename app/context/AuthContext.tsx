@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { autoConfirmEmail } from '@/lib/actions';
 
 export type UserRole = 'buyer' | 'business' | 'admin';
 
@@ -129,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function registerBuyer(data: BuyerRegisterData) {
     const supabase = createClient();
     const email = `${data.phone}@vnn.vn`;
-    const { error } = await supabase.auth.signUp({
+    const { data: signUpData, error } = await supabase.auth.signUp({
       email,
       password: data.password,
       options: {
@@ -150,6 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       return { ok: false, error: error.message };
     }
+    if (signUpData?.user) await autoConfirmEmail(signUpData.user.id);
     return { ok: true };
   }
 
@@ -178,6 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { ok: false, error: error.message };
     }
     if (authData.user) {
+      await autoConfirmEmail(authData.user.id);
       await supabase.from('business_profiles').upsert({
         id: authData.user.id,
         business_name: data.businessName,
