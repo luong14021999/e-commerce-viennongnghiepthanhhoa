@@ -399,6 +399,18 @@ export default function Header() {
       <div className="border-t border-gray-100 bg-white hidden sm:block">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
+            {/* Trang chủ */}
+            <Link
+              href="/"
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
+                pathname === '/'
+                  ? 'border-green-600 text-green-700'
+                  : 'border-transparent text-gray-600 hover:text-green-700 hover:border-green-300'
+              }`}
+            >
+              🏠 Trang chủ
+            </Link>
+            <span className="w-px h-5 bg-gray-200 flex-shrink-0" />
             {/* Tất cả */}
             <Link
               href="/san-pham"
@@ -465,6 +477,13 @@ export default function Header() {
       {/* Mobile nav menu */}
       {mobileMenuOpen && (
         <div className="sm:hidden bg-white border-t border-gray-200 py-2">
+          <Link
+            href="/"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-green-700 hover:bg-green-50"
+          >
+            🏠 Trang chủ
+          </Link>
           <Link
             href="/san-pham"
             onClick={() => setMobileMenuOpen(false)}
