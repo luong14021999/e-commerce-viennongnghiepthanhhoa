@@ -12,7 +12,9 @@ export default function BusinessProductsSection() {
   const { getByStatus, sellerProfiles } = useProducts();
 
   const businesses = useMemo(() => {
-    const approved = getByStatus("approved").filter((p) => !!p.sellerId);
+    const approved = getByStatus("approved").filter(
+      (p) => !!p.sellerId && p.sellerName !== "Viện Nông Nghiệp Thanh Hóa"
+    );
     const byId: Record<string, typeof approved> = {};
     for (const p of approved) {
       if (!p.sellerId) continue;
