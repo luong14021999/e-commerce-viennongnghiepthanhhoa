@@ -23,6 +23,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [form, setForm] = useState({
     name: '',
     phone: '',
@@ -95,10 +96,12 @@ export default function RegisterPage() {
     const loginResult = await login(form.phone, form.password);
     setLoading(false);
     if (loginResult.ok) {
+      setSuccess('Đăng ký thành công! Đang chuyển trang...');
       // onAuthStateChange + useEffect will handle redirect
       return;
     }
     // Fallback: go to login page
+    setSuccess('Đăng ký thành công! Vui lòng đăng nhập.');
     router.push('/dang-nhap');
   }
 
@@ -188,6 +191,12 @@ export default function RegisterPage() {
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
           <form onSubmit={handleSubmit} className="space-y-4">
+            {success && (
+              <div className="bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-xl flex items-center gap-2">
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
+                {success}
+              </div>
+            )}
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl flex items-center gap-2">
                 <span>⚠️</span> {error}
