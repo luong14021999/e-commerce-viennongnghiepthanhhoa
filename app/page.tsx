@@ -68,7 +68,7 @@ export default async function HomePage() {
     .order("sold", { ascending: false });
 
   const allProducts = (productsData ?? []).map(dbRowToProduct);
-  const businessProducts = allProducts.filter((p) => !!p.sellerId);
+  const businessProducts = allProducts.filter((p) => !!p.sellerId && p.sellerName !== "Viện Nông Nghiệp Thanh Hóa");
   const sellerIds = [
     ...new Set(businessProducts.map((p) => p.sellerId).filter(Boolean)),
   ] as string[];
