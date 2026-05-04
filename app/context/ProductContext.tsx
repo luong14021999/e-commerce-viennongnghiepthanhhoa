@@ -29,7 +29,8 @@ type ProductContextValue = {
     id: string,
     data: Partial<Omit<Product, "id" | "status" | "submittedAt" | "rating" | "reviews" | "sold">>,
     newImageFiles?: File[],
-    deletedImageUrls?: string[]
+    deletedImageUrls?: string[],
+    resubmit?: boolean
   ) => Promise<{ ok: boolean; error?: string }>;
   saveSellerProfile: (profile: SellerProfile) => void;
   getSellerProfile: (sellerId: string) => SellerProfile | undefined;
@@ -201,7 +202,8 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     id: string,
     data: Partial<Omit<Product, "id" | "status" | "submittedAt" | "rating" | "reviews" | "sold">>,
     newImageFiles?: File[],
-    deletedImageUrls?: string[]
+    deletedImageUrls?: string[],
+    resubmit?: boolean
   ): Promise<{ ok: boolean; error?: string }> {
     const supabase = createClient();
     const { error } = await supabase.from("products").update({
@@ -219,6 +221,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       specs: data.specs,
       origin: data.origin,
       certifications: data.certifications,
+      ...(resubmit ? { status: "pending", rejection_reason: null } : {}),
     }).eq("id", id);
 
     if (error) return { ok: false, error: error.message };

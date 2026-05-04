@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 import { useProducts } from "@/app/context/ProductContext";
 import { formatPrice, categories } from "@/app/lib/data";
+import type { Product } from "@/app/lib/data";
+import EditProductModal from "@/app/admin/EditProductModal";
 
 const STATUS_LABEL: Record<string, { label: string; color: string; bg: string }> = {
   pending:  { label: "Chờ duyệt",  color: "text-amber-700",  bg: "bg-amber-100"  },
@@ -17,6 +19,7 @@ export default function DashboardPage() {
   const { user, isLoading } = useAuth();
   const { getBySeller, deleteProduct } = useProducts();
   const router = useRouter();
+  const [editProduct, setEditProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     if (!isLoading && (!user || user.role !== "business")) router.push("/dang-nhap");
@@ -172,15 +175,28 @@ export default function DashboardPage() {
                           {p.submittedAt ? new Date(p.submittedAt).toLocaleDateString("vi-VN") : "—"}
                         </td>
                         <td className="px-4 py-4 text-center">
-                          <button
-                            onClick={() => { if (confirm("Xóa sản phẩm này?")) deleteProduct(p.id); }}
-                            className="text-red-400 hover:text-red-600 transition-colors p-1.5 rounded-lg hover:bg-red-50"
-                            title="Xóa sản phẩm"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                            </svg>
-                          </button>
+                          <div className="flex items-center justify-center gap-1">
+                            {p.status === "rejected" && (
+                              <button
+                                onClick={() => setEditProduct(p)}
+                                className="text-blue-500 hover:text-blue-700 transition-colors p-1.5 rounded-lg hover:bg-blue-50"
+                                title="Bổ sung thông tin & gửi lại"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                              </button>
+                            )}
+                            <button
+                              onClick={() => { if (confirm("Xóa sản phẩm này?")) deleteProduct(p.id); }}
+                              className="text-red-400 hover:text-red-600 transition-colors p-1.5 rounded-lg hover:bg-red-50"
+                              title="Xóa sản phẩm"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                              </svg>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -216,6 +232,14 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {editProduct && (
+        <EditProductModal
+          product={editProduct}
+          onClose={() => setEditProduct(null)}
+          resubmit
+        />
+      )}
     </div>
   );
 }

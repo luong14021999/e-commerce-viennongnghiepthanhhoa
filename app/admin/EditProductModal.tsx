@@ -14,7 +14,7 @@ type EditForm = {
   certifications: string; origin: string;
 };
 
-export default function EditProductModal({ product, onClose }: { product: Product; onClose: () => void }) {
+export default function EditProductModal({ product, onClose, resubmit }: { product: Product; onClose: () => void; resubmit?: boolean }) {
   const { updateProduct } = useProducts();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -98,6 +98,7 @@ export default function EditProductModal({ product, onClose }: { product: Produc
       },
       newFiles.length > 0 ? newFiles : undefined,
       removedImageUrls.length > 0 ? removedImageUrls : undefined,
+      resubmit,
     );
 
     setSaving(false);
@@ -109,11 +110,16 @@ export default function EditProductModal({ product, onClose }: { product: Produc
     <div className="fixed inset-0 bg-black/60 flex items-start justify-center z-50 overflow-y-auto py-4 px-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl my-auto">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="font-bold text-gray-900 text-lg">Chỉnh sửa sản phẩm</h2>
+          <h2 className="font-bold text-gray-900 text-lg">{resubmit ? "Bổ sung thông tin & Gửi lại" : "Chỉnh sửa sản phẩm"}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-xl leading-none transition-colors">✕</button>
         </div>
 
         <form onSubmit={handleSave} className="p-6 space-y-5">
+          {resubmit && product.rejectionReason && (
+            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">
+              <span className="font-semibold">Lý do từ chối: </span>{product.rejectionReason}
+            </div>
+          )}
           {/* Basic info */}
           <div className="space-y-4">
             <div>
@@ -268,7 +274,7 @@ export default function EditProductModal({ product, onClose }: { product: Produc
                   </svg>
                   Đang lưu...
                 </>
-              ) : "Lưu thay đổi"}
+              ) : resubmit ? "Gửi lại để duyệt" : "Lưu thay đổi"}
             </button>
           </div>
         </form>
