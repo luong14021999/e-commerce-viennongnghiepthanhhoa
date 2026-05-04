@@ -50,15 +50,44 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (!isLoading && !user) {
       router.replace("/dang-nhap");
-    } else if (!isLoading && user && user.role !== "buyer") {
-      router.replace("/");
     }
   }, [user, isLoading, router]);
 
-  if (isLoading || user?.role !== "buyer") {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="animate-spin w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (user && user.role !== "buyer") {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-10 max-w-md w-full text-center">
+          <div className="text-5xl mb-4">🔒</div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Không thể đặt hàng</h2>
+          <p className="text-gray-500 text-sm mb-2">
+            Chỉ tài khoản <span className="font-semibold text-gray-700">Người mua</span> mới có thể đặt hàng trên hệ thống.
+          </p>
+          <p className="text-gray-400 text-sm mb-6">
+            Tài khoản <span className="font-semibold">{user.role === "admin" ? "Quản trị viên" : "Doanh nghiệp"}</span> không có quyền mua hàng. Vui lòng đăng nhập bằng tài khoản người mua để tiếp tục.
+          </p>
+          <div className="flex gap-3">
+            <Link
+              href="/"
+              className="flex-1 border-2 border-gray-200 text-gray-600 font-semibold py-2.5 rounded-xl text-sm text-center hover:bg-gray-50 transition-colors"
+            >
+              Về trang chủ
+            </Link>
+            <Link
+              href="/dang-nhap"
+              className="flex-1 bg-green-700 text-white font-bold py-2.5 rounded-xl text-sm text-center hover:bg-green-600 transition-colors"
+            >
+              Đăng nhập tài khoản khác
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
