@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -17,6 +17,10 @@ const sortOptions = [
   { value: "rating",     label: "Đánh giá cao nhất" },
 ];
 
+type Suggestion =
+  | { kind: "product"; product: Product }
+  | { kind: "business"; biz: BusinessCard };
+
 type Props = {
   instituteProducts: Product[];
   businesses: BusinessCard[];
@@ -30,13 +34,94 @@ export default function ProductsClient({ instituteProducts, businesses }: Props)
   const [source, setSource]               = useState<"institute" | "business">("institute");
   const [activeCategory, setActiveCategory] = useState(initialCategory);
   const [sortBy, setSortBy]               = useState("popular");
-  const [searchQuery]                     = useState(initialQuery);
+  const [searchQuery, setSearchQuery]     = useState(initialQuery);
+  const [inputValue, setInputValue]       = useState(initialQuery);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [focusedIdx, setFocusedIdx]       = useState(-1);
+
+  const inputRef    = useRef<HTMLInputElement>(null);
+  const wrapperRef  = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+        setFocusedIdx(-1);
+      }
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  const suggestions = useMemo((): Suggestion[] => {
+    const q = inputValue.trim().toLowerCase();
+    if (q.length < 1) return [];
+    const prodSuggestions = instituteProducts
+      .filter((p) => p.name.toLowerCase().includes(q) || p.origin.toLowerCase().includes(q))
+      .slice(0, 5)
+      .map((p): Suggestion => ({ kind: "product", product: p }));
+    const bizSuggestions = businesses
+      .filter((b) => b.sellerName.toLowerCase().includes(q))
+      .slice(0, 3)
+      .map((b): Suggestion => ({ kind: "business", biz: b }));
+    return [...prodSuggestions, ...bizSuggestions];
+  }, [inputValue, instituteProducts, businesses]);
+
+  function handleInputChange(val: string) {
+    setInputValue(val);
+    setShowSuggestions(true);
+    setFocusedIdx(-1);
+    // Live filter
+    setSearchQuery(val);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!showSuggestions || suggestions.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setFocusedIdx((i) => Math.min(i + 1, suggestions.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setFocusedIdx((i) => Math.max(i - 1, -1));
+    } else if (e.key === "Enter" && focusedIdx >= 0) {
+      e.preventDefault();
+      applySuggestion(suggestions[focusedIdx]);
+    } else if (e.key === "Escape") {
+      setShowSuggestions(false);
+      setFocusedIdx(-1);
+    }
+  }
+
+  function applySuggestion(s: Suggestion) {
+    if (s.kind === "product") {
+      setInputValue(s.product.name);
+      setSearchQuery(s.product.name);
+      setSource("institute");
+      setActiveCategory("tat-ca");
+    } else {
+      setInputValue(s.biz.sellerName);
+      setSearchQuery(s.biz.sellerName);
+      setSource("business");
+    }
+    setShowSuggestions(false);
+    setFocusedIdx(-1);
+    inputRef.current?.blur();
+  }
+
+  function clearSearch() {
+    setInputValue("");
+    setSearchQuery("");
+    setShowSuggestions(false);
+    setFocusedIdx(-1);
+    inputRef.current?.focus();
+  }
 
   const filtered = useMemo(() => {
     let list = [...instituteProducts];
     if (activeCategory !== "tat-ca") list = list.filter((p) => p.category === activeCategory);
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
       list = list.filter(
         (p) => p.name.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q) || p.origin.toLowerCase().includes(q)
       );
@@ -50,6 +135,14 @@ export default function ProductsClient({ instituteProducts, businesses }: Props)
     }
   }, [instituteProducts, activeCategory, sortBy, searchQuery]);
 
+  const filteredBusinesses = useMemo(() => {
+    if (!searchQuery.trim()) return businesses;
+    const q = searchQuery.trim().toLowerCase();
+    return businesses.filter(
+      (b) => b.sellerName.toLowerCase().includes(q) || b.address.toLowerCase().includes(q) || b.description.toLowerCase().includes(q)
+    );
+  }, [businesses, searchQuery]);
+
   return (
     <div className="min-h-screen">
       {/* Hero */}
@@ -61,8 +154,68 @@ export default function ProductsClient({ instituteProducts, businesses }: Props)
             <span className="text-white">Sản phẩm</span>
           </nav>
           <h1 className="text-3xl md:text-4xl font-bold mb-4">
-            {searchQuery ? `Kết quả tìm kiếm: "${searchQuery}"` : "Sản phẩm & Dịch vụ"}
+            {searchQuery.trim() ? `Kết quả: "${searchQuery}"` : "Sản phẩm & Dịch vụ"}
           </h1>
+
+          {/* Search bar */}
+          <div ref={wrapperRef} className="relative max-w-xl mb-5">
+            <div className="flex items-center bg-white rounded-xl shadow-lg overflow-hidden">
+              <span className="pl-4 text-gray-400 text-lg flex-shrink-0">🔍</span>
+              <input
+                ref={inputRef}
+                type="text"
+                value={inputValue}
+                onChange={(e) => handleInputChange(e.target.value)}
+                onFocus={() => inputValue.trim() && setShowSuggestions(true)}
+                onKeyDown={handleKeyDown}
+                placeholder="Tìm sản phẩm, dịch vụ, nguồn gốc..."
+                className="flex-1 px-3 py-3 text-gray-800 text-sm bg-transparent outline-none placeholder-gray-400"
+              />
+              {inputValue && (
+                <button onClick={clearSearch} className="px-3 text-gray-400 hover:text-gray-600 flex-shrink-0 text-lg leading-none">
+                  ×
+                </button>
+              )}
+            </div>
+
+            {/* Suggestions dropdown */}
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50">
+                {suggestions.map((s, idx) => (
+                  <button
+                    key={idx}
+                    onMouseDown={(e) => { e.preventDefault(); applySuggestion(s); }}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-green-50 transition-colors ${focusedIdx === idx ? "bg-green-50" : ""}`}
+                  >
+                    {s.kind === "product" ? (
+                      <>
+                        <div className={`${s.product.bg} w-9 h-9 rounded-lg flex items-center justify-center text-base flex-shrink-0 relative overflow-hidden`}>
+                          {(s.product.images?.[0] ?? s.product.imageUrl)
+                            ? <Image src={s.product.images?.[0] ?? s.product.imageUrl!} alt={s.product.name} fill className="object-cover" sizes="36px" />
+                            : <span>{s.product.icon}</span>
+                          }
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-800 truncate">{s.product.name}</p>
+                          <p className="text-xs text-gray-400 truncate">{s.product.origin} · {s.product.price > 0 ? formatPrice(s.product.price) : "Liên hệ"}</p>
+                        </div>
+                        <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full flex-shrink-0">Sản phẩm</span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-9 h-9 bg-green-100 rounded-lg flex items-center justify-center text-base flex-shrink-0">🏪</div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-800 truncate">{s.biz.sellerName}</p>
+                          <p className="text-xs text-gray-400 truncate">{s.biz.productCount} sản phẩm{s.biz.address ? ` · ${s.biz.address}` : ""}</p>
+                        </div>
+                        <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full flex-shrink-0">Doanh nghiệp</span>
+                      </>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Source switcher */}
           <div className="flex gap-2 bg-white/10 rounded-xl p-1 w-fit">
@@ -71,14 +224,14 @@ export default function ProductsClient({ instituteProducts, businesses }: Props)
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors ${source === "institute" ? "bg-white text-green-800 shadow" : "text-green-200 hover:text-white"}`}
             >
               🌾 Sản phẩm của Viện
-              <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${source === "institute" ? "bg-green-100 text-green-700" : "bg-white/20"}`}>{instituteProducts.length}</span>
+              <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${source === "institute" ? "bg-green-100 text-green-700" : "bg-white/20"}`}>{searchQuery.trim() ? filtered.length : instituteProducts.length}</span>
             </button>
             <button
               onClick={() => { setSource("business"); setActiveCategory("tat-ca"); }}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors ${source === "business" ? "bg-white text-green-800 shadow" : "text-green-200 hover:text-white"}`}
             >
               🏪 Doanh nghiệp đối tác
-              <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${source === "business" ? "bg-green-100 text-green-700" : "bg-white/20"}`}>{businesses.length}</span>
+              <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${source === "business" ? "bg-green-100 text-green-700" : "bg-white/20"}`}>{searchQuery.trim() ? filteredBusinesses.length : businesses.length}</span>
             </button>
           </div>
         </div>
@@ -134,7 +287,7 @@ export default function ProductsClient({ instituteProducts, businesses }: Props)
                 <div className="text-5xl mb-4">🔍</div>
                 <h3 className="text-lg font-semibold text-gray-700 mb-2">Không tìm thấy sản phẩm</h3>
                 <p className="text-gray-500 mb-6">Hãy thử tìm kiếm với từ khóa khác</p>
-                <button onClick={() => setActiveCategory("tat-ca")}
+                <button onClick={() => { setActiveCategory("tat-ca"); clearSearch(); }}
                   className="bg-green-600 text-white px-6 py-2.5 rounded-full font-semibold hover:bg-green-700 transition-colors">
                   Xem tất cả sản phẩm
                 </button>
@@ -150,14 +303,16 @@ export default function ProductsClient({ instituteProducts, businesses }: Props)
         {/* ── BUSINESS SECTION ── */}
         {source === "business" && (
           <>
-            {businesses.length === 0 ? (
+            {filteredBusinesses.length === 0 ? (
               <div className="text-center py-20">
                 <div className="text-5xl mb-4">🏪</div>
-                <p className="text-gray-500 font-medium">Chưa có doanh nghiệp nào đăng sản phẩm</p>
+                <p className="text-gray-500 font-medium">
+                  {searchQuery.trim() ? `Không tìm thấy doanh nghiệp nào khớp với "${searchQuery}"` : "Chưa có doanh nghiệp nào đăng sản phẩm"}
+                </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {businesses.map((biz) => (
+                {filteredBusinesses.map((biz) => (
                   <div key={biz.sellerId} className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
                     {/* Business header */}
                     <div className="bg-gradient-to-r from-green-700 to-green-600 p-4 flex items-center gap-3">
