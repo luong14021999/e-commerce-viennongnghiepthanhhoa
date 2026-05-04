@@ -197,8 +197,9 @@ export default function AdminOrders() {
                     onClick={() => setExpanded(isOpen ? null : order.id)}
                     className="flex-1 min-w-0 text-left"
                   >
-                    <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                      <span className="font-bold text-gray-900 text-sm font-mono tracking-wide">#{shortId}</span>
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className="text-xs text-gray-400 font-medium">Mã đơn:</span>
+                      <span className="font-bold text-gray-900 text-sm font-mono tracking-widest bg-gray-100 px-2 py-0.5 rounded">#{shortId}</span>
                       <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${s.bg} ${s.color}`}>
                         {s.icon} {s.label}
                       </span>
