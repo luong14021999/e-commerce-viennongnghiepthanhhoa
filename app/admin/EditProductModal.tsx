@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Image from "next/image";
 import { useProducts } from "@/app/context/ProductContext";
 import { categories } from "@/app/lib/data";
 import type { Product } from "@/app/lib/data";
@@ -225,7 +226,7 @@ export default function EditProductModal({ product, onClose, resubmit }: { produ
             <div className="flex flex-wrap gap-3">
               {existingImages.map((url, idx) => (
                 <div key={url} className="relative w-24 h-24 rounded-xl overflow-hidden border-2 border-gray-300 group flex-shrink-0">
-                  <img src={url} alt="" className="w-full h-full object-cover" />
+                  <Image src={url} alt="" fill className="object-cover" sizes="96px" />
                   {idx === 0 && <span className="absolute bottom-0 left-0 right-0 bg-gray-800/80 text-white text-[10px] text-center py-0.5">Ảnh chính</span>}
                   <button type="button" onClick={() => removeExistingImage(url)}
                     className="absolute top-1 right-1 bg-black/60 hover:bg-red-600 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">

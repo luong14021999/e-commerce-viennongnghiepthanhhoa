@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/app/context/CartContext";
@@ -59,9 +60,9 @@ export default function CartPage() {
             {items.map(({ product, quantity }) => (
               <div key={product.id} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4">
                 {/* Product icon */}
-                <Link href={`/san-pham/${product.id}`} className={`${product.bg} w-20 h-20 rounded-xl flex items-center justify-center flex-shrink-0 text-4xl overflow-hidden`}>
+                <Link href={`/san-pham/${product.id}`} className={`${product.bg} w-20 h-20 rounded-xl flex items-center justify-center flex-shrink-0 text-4xl overflow-hidden relative`}>
                   {(product.images?.[0] ?? product.imageUrl)
-                    ? <img src={product.images?.[0] ?? product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                    ? <Image src={product.images?.[0] ?? product.imageUrl!} alt={product.name} fill className="object-cover" sizes="80px" />
                     : <span>{product.icon}</span>
                   }
                 </Link>

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import type { Product } from "@/app/lib/data";
 import { formatPrice, discountPercent } from "@/app/lib/data";
@@ -15,7 +16,7 @@ export default function ProductCard({ product }: { product: Product }) {
       {/* Image area */}
       <Link href={`/san-pham/${product.id}`} className={`${product.bg} flex items-center justify-center h-40 relative overflow-hidden`}>
         {(product.images?.[0] ?? product.imageUrl) ? (
-          <img src={product.images?.[0] ?? product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+          <Image src={product.images?.[0] ?? product.imageUrl!} alt={product.name} fill className="object-cover" sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" />
         ) : (
           <span className="text-6xl">{product.icon}</span>
         )}

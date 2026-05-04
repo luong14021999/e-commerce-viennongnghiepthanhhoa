@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
@@ -150,9 +151,9 @@ export default function MyOrdersPage() {
                       <div className="divide-y divide-gray-50">
                         {order.order_items.map((item) => (
                           <div key={item.id} className="flex items-center gap-3 px-5 py-3">
-                            <div className="w-12 h-12 rounded-xl overflow-hidden bg-green-50 flex items-center justify-center text-xl flex-shrink-0">
+                            <div className="w-12 h-12 rounded-xl overflow-hidden bg-green-50 flex items-center justify-center text-xl flex-shrink-0 relative">
                               {item.product_image_url
-                                ? <img src={item.product_image_url} alt={item.product_name} className="w-full h-full object-cover"/>
+                                ? <Image src={item.product_image_url} alt={item.product_name} fill className="object-cover" sizes="48px" />
                                 : <span>{item.product_icon ?? "🌾"}</span>
                               }
                             </div>

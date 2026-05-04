@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
@@ -305,9 +306,9 @@ export default function DashboardPage() {
                       <tr key={p.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className={`${p.bg} w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center text-xl flex-shrink-0`}>
+                            <div className={`${p.bg} w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center text-xl flex-shrink-0 relative`}>
                               {(p.images?.[0] ?? p.imageUrl)
-                                ? <img src={p.images?.[0] ?? p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+                                ? <Image src={p.images?.[0] ?? p.imageUrl!} alt={p.name} fill className="object-cover" sizes="40px" />
                                 : <span>{p.icon}</span>
                               }
                             </div>

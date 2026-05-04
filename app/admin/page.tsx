@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
@@ -111,8 +112,8 @@ export default function AdminPage() {
   function ProductCard({ p }: { p: Product }) {
     return (
       <div className="bg-white rounded-2xl border border-gray-200 p-5 flex gap-4 items-start flex-wrap md:flex-nowrap">
-        <div className={`${p.bg} w-16 h-16 rounded-xl overflow-hidden flex items-center justify-center text-3xl flex-shrink-0`}>
-          {(p.images?.[0] ?? p.imageUrl) ? <img src={p.images?.[0] ?? p.imageUrl} alt={p.name} className="w-full h-full object-cover" /> : p.icon}
+        <div className={`${p.bg} w-16 h-16 rounded-xl overflow-hidden flex items-center justify-center text-3xl flex-shrink-0 relative`}>
+          {(p.images?.[0] ?? p.imageUrl) ? <Image src={p.images?.[0] ?? p.imageUrl!} alt={p.name} fill className="object-cover" sizes="64px" /> : p.icon}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3 flex-wrap">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, Suspense } from "react";
+import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import ProductCard from "@/app/components/ProductCard";
@@ -212,9 +213,9 @@ function ProductsContent() {
                         <div className="px-4 py-3 flex gap-2">
                           {preview.map((p) => (
                             <div key={p.id} className="flex-1">
-                              <div className={`${p.bg} w-full aspect-square rounded-lg overflow-hidden flex items-center justify-center text-2xl mb-1`}>
+                              <div className={`${p.bg} w-full aspect-square rounded-lg overflow-hidden flex items-center justify-center text-2xl mb-1 relative`}>
                                 {(p.images?.[0] ?? p.imageUrl)
-                                  ? <img src={p.images?.[0] ?? p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+                                  ? <Image src={p.images?.[0] ?? p.imageUrl!} alt={p.name} fill className="object-cover" sizes="(max-width: 640px) 50vw, 200px" />
                                   : <span>{p.icon}</span>
                                 }
                               </div>
