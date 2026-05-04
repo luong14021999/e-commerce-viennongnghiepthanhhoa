@@ -88,7 +88,7 @@ export default function DashboardPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between flex-wrap gap-4">
           <div>
             <p className="text-green-300 text-sm">Dashboard doanh nghiệp</p>
-            <h1 className="text-2xl font-bold">{user.business?.businessName ?? user.name}</h1>
+            <h1 className="text-2xl font-bold">{user.business?.businessName ?? "Doanh nghiệp"}</h1>
             <div className="flex items-center gap-2 mt-1">
               {user.business?.verified ? (
                 <span className="bg-green-600 text-green-100 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-green-500">✓ Đã xác minh</span>
@@ -391,7 +391,7 @@ export default function DashboardPage() {
           </div>
           <div className="mt-4 pt-4 border-t border-gray-100">
             <Link href={`/doanh-nghiep/${user.id}`} className="inline-flex items-center gap-2 text-sm font-semibold text-green-700 hover:text-green-600">
-              🏪 Xem gian hàng công khai của {user.business?.businessName ?? user.name} →
+              🏪 Xem gian hàng công khai của {user.business?.businessName ?? "doanh nghiệp"} →
             </Link>
           </div>
         </div>
