@@ -3,10 +3,22 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useCart } from '@/app/context/CartContext';
 import { useAuth } from '@/app/context/AuthContext';
-import { categories } from '@/app/lib/data';
+import { categories, formatPrice } from '@/app/lib/data';
+
+type Suggestion = {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  unit: string;
+  icon: string;
+  bg: string;
+  sellerName: string | null;
+  imageUrl: string | null;
+};
 
 export default function Header() {
   const pathname = usePathname();
@@ -17,14 +29,124 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [focusedIdx, setFocusedIdx] = useState(-1);
+  const [loading, setLoading] = useState(false);
+
+  const searchWrapperRef = useRef<HTMLDivElement>(null);
+  const mobileSearchWrapperRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => setMounted(true), []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      const target = e.target as Node;
+      if (
+        searchWrapperRef.current?.contains(target) ||
+        mobileSearchWrapperRef.current?.contains(target)
+      ) return;
+      setShowSuggestions(false);
+      setFocusedIdx(-1);
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
+  const fetchSuggestions = useCallback(async (q: string) => {
+    if (q.trim().length < 1) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/search-suggestions?q=${encodeURIComponent(q.trim())}`);
+      const data: Suggestion[] = await res.json();
+      setSuggestions(data);
+      setShowSuggestions(data.length > 0);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  function handleSearchChange(val: string) {
+    setSearchQuery(val);
+    setFocusedIdx(-1);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchSuggestions(val), 200);
+  }
 
   function handleSearch(e: { preventDefault(): void }) {
     e.preventDefault();
     if (searchQuery.trim()) {
+      setShowSuggestions(false);
       router.push(`/san-pham?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   }
+
+  function applySuggestion(s: Suggestion) {
+    setSearchQuery(s.name);
+    setShowSuggestions(false);
+    setFocusedIdx(-1);
+    router.push(`/san-pham/${s.id}`);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!showSuggestions || suggestions.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setFocusedIdx((i) => Math.min(i + 1, suggestions.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setFocusedIdx((i) => Math.max(i - 1, -1));
+    } else if (e.key === 'Enter' && focusedIdx >= 0) {
+      e.preventDefault();
+      applySuggestion(suggestions[focusedIdx]);
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+      setFocusedIdx(-1);
+    }
+  }
+
+  const SuggestionsDropdown = ({ suggestions }: { suggestions: Suggestion[] }) => (
+    <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-[100]">
+      {suggestions.map((s, idx) => (
+        <button
+          key={s.id}
+          onMouseDown={(e) => { e.preventDefault(); applySuggestion(s); }}
+          className={`w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-green-50 transition-colors ${focusedIdx === idx ? 'bg-green-50' : ''}`}
+        >
+          <div className={`${s.bg} w-9 h-9 rounded-lg flex items-center justify-center text-base flex-shrink-0 relative overflow-hidden`}>
+            {s.imageUrl
+              ? <Image src={s.imageUrl} alt={s.name} fill className="object-cover" sizes="36px" />
+              : <span>{s.icon}</span>
+            }
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-gray-800 truncate">{s.name}</p>
+            <p className="text-xs text-gray-400 truncate">
+              {s.price > 0 ? `${formatPrice(s.price)}/${s.unit}` : 'Liên hệ'}
+              {s.sellerName ? ` · ${s.sellerName}` : ''}
+            </p>
+          </div>
+          <span className="text-green-600 text-xs flex-shrink-0">→</span>
+        </button>
+      ))}
+      <button
+        onMouseDown={(e) => { e.preventDefault(); handleSearch(e); }}
+        className="w-full flex items-center gap-2 px-4 py-2.5 bg-gray-50 text-sm text-gray-600 hover:bg-green-50 hover:text-green-700 transition-colors border-t border-gray-100"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        Tìm tất cả kết quả cho &ldquo;{searchQuery}&rdquo;
+      </button>
+    </div>
+  );
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50">
@@ -53,15 +175,9 @@ export default function Header() {
 
       {/* Main header */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {' '}
         <div className="flex items-center gap-2 sm:gap-4 py-3 sm:py-2">
-          {' '}
-          {/* Logo */}{' '}
-          <Link
-            href="/"
-            className="flex items-center gap-3 flex-shrink-0 group"
-          >
-            {' '}
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-3 flex-shrink-0 group">
             <Image
               src="/thanh_hoa_agriculture_logo.png"
               alt="Viện Nông Nghiệp Thanh Hóa"
@@ -78,40 +194,42 @@ export default function Header() {
               </div>
             </div>
           </Link>
-          {/* Search */}
-          <form
-            onSubmit={handleSearch}
-            className="flex-1 max-w-2xl hidden sm:flex"
-          >
-            <div className="flex w-full border-2 border-green-600 rounded-full overflow-hidden">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Tìm kiếm sản phẩm... (lúa giống, phân bón, rau sạch...)"
-                className="flex-1 px-4 py-2 text-base outline-none text-gray-700 bg-white"
-              />
-              <button
-                type="submit"
-                className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 text-sm font-semibold transition-colors flex items-center gap-1.5"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+
+          {/* Desktop Search */}
+          <div ref={searchWrapperRef} className="flex-1 max-w-2xl hidden sm:block relative">
+            <form onSubmit={handleSearch}>
+              <div className="flex w-full border-2 border-green-600 rounded-full overflow-hidden">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => handleSearchChange(e.target.value)}
+                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Tìm kiếm sản phẩm... (lúa giống, phân bón, rau sạch...)"
+                  className="flex-1 px-4 py-2 text-base outline-none text-gray-700 bg-white"
+                />
+                {loading && (
+                  <span className="flex items-center pr-2">
+                    <svg className="w-4 h-4 animate-spin text-green-500" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                    </svg>
+                  </span>
+                )}
+                <button
+                  type="submit"
+                  className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 text-sm font-semibold transition-colors flex items-center gap-1.5"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-                <span className="hidden md:block">Tìm kiếm</span>
-              </button>
-            </div>
-          </form>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <span className="hidden md:block">Tìm kiếm</span>
+                </button>
+              </div>
+            </form>
+            {showSuggestions && <SuggestionsDropdown suggestions={suggestions} />}
+          </div>
+
           {/* Right actions */}
           <div className="flex items-center gap-2 ml-auto sm:ml-0 flex-shrink-0">
             {/* Cart */}
@@ -121,18 +239,8 @@ export default function Header() {
               aria-label="Giỏ hàng"
             >
               <div className="relative">
-                <svg
-                  className="w-6 h-6 text-gray-700 group-hover:text-green-700"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.8}
-                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                  />
+                <svg className="w-6 h-6 text-gray-700 group-hover:text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
                 {mounted && totalItems > 0 && (
                   <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
@@ -140,9 +248,7 @@ export default function Header() {
                   </span>
                 )}
               </div>
-              <span className="text-xs text-gray-600 hidden sm:block">
-                Giỏ hàng
-              </span>
+              <span className="text-xs text-gray-600 hidden sm:block">Giỏ hàng</span>
             </Link>
 
             {/* User / Login */}
@@ -161,128 +267,55 @@ export default function Header() {
                 </button>
                 {userMenuOpen && (
                   <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
-                    {/* Identity header */}
                     <div
                       className="px-4 py-3 border-b border-gray-100"
                       style={{
-                        background:
-                          user.role === 'admin'
-                            ? '#1f2937'
-                            : user.role === 'business'
-                              ? '#f0fdf4'
-                              : '#f0fdf4',
+                        background: user.role === 'admin' ? '#1f2937' : '#f0fdf4',
                       }}
                     >
                       <div className="flex items-center gap-2">
-                        <div
-                          className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 ${user.role === 'admin' ? 'bg-gray-600' : 'bg-green-600'}`}
-                        >
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 ${user.role === 'admin' ? 'bg-gray-600' : 'bg-green-600'}`}>
                           {user.name[0]}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-semibold text-gray-900 text-sm truncate">
-                            {user.name}
-                          </p>
+                          <p className="font-semibold text-gray-900 text-sm truncate">{user.name}</p>
                           <p className="text-xs text-gray-500">
-                            {user.role === 'buyer'
-                              ? 'Người mua'
-                              : user.role === 'business'
-                                ? 'Doanh nghiệp'
-                                : 'Quản trị viên'}
+                            {user.role === 'buyer' ? 'Người mua' : user.role === 'business' ? 'Doanh nghiệp' : 'Quản trị viên'}
                           </p>
                         </div>
                       </div>
                     </div>
 
-                    {/* Buyer links */}
                     {user.role === 'buyer' && (
-                      <Link
-                        href="/don-hang"
-                        onClick={() => setUserMenuOpen(false)}
-                        className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
-                      >
-                        <svg
-                          className="w-4 h-4 text-gray-400"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                          />
+                      <Link href="/don-hang" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                         </svg>
                         Đơn hàng của tôi
                       </Link>
                     )}
 
-                    {/* Business links */}
                     {user.role === 'business' && (
                       <>
-                        <Link
-                          href="/dashboard"
-                          onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50"
-                        >
-                          <svg
-                            className="w-4 h-4 text-green-600"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                            />
+                        <Link href="/dashboard" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50">
+                          <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                           </svg>
                           Dashboard doanh nghiệp
                         </Link>
-                        <Link
-                          href="/dashboard/them-san-pham"
-                          onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50"
-                        >
-                          <svg
-                            className="w-4 h-4 text-green-600"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 4v16m8-8H4"
-                            />
+                        <Link href="/dashboard/them-san-pham" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50">
+                          <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                           </svg>
                           Thêm sản phẩm mới
                         </Link>
                       </>
                     )}
 
-                    {/* Admin links */}
                     {user.role === 'admin' && (
-                      <Link
-                        href="/admin"
-                        onClick={() => setUserMenuOpen(false)}
-                        className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        <svg
-                          className="w-4 h-4 text-gray-500"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                          />
+                      <Link href="/admin" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100">
+                        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                         </svg>
                         Bảng quản trị
                       </Link>
@@ -290,24 +323,11 @@ export default function Header() {
 
                     <hr className="border-gray-100" />
                     <button
-                      onClick={() => {
-                        logout();
-                        setUserMenuOpen(false);
-                      }}
+                      onClick={() => { logout(); setUserMenuOpen(false); }}
                       className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
                     >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                        />
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                       </svg>
                       Đăng xuất
                     </button>
@@ -316,82 +336,51 @@ export default function Header() {
               </div>
             ) : (
               <div className="flex items-center gap-1.5">
-                <Link
-                  href="/dang-nhap"
-                  className="text-sm font-semibold text-green-700 hover:text-green-600 px-3 py-1.5 rounded-lg hover:bg-green-50 transition-colors"
-                >
+                <Link href="/dang-nhap" className="text-sm font-semibold text-green-700 hover:text-green-600 px-3 py-1.5 rounded-lg hover:bg-green-50 transition-colors">
                   Đăng nhập
                 </Link>
-                <Link
-                  href="/dang-ky"
-                  className="text-sm font-semibold bg-green-700 hover:bg-green-600 text-white px-3 py-1.5 rounded-full transition-colors hidden sm:block"
-                >
+                <Link href="/dang-ky" className="text-sm font-semibold bg-green-700 hover:bg-green-600 text-white px-3 py-1.5 rounded-full transition-colors hidden sm:block">
                   Đăng ký
                 </Link>
               </div>
             )}
 
             {/* Mobile menu toggle */}
-            <button
-              className="sm:hidden p-2 rounded-lg hover:bg-gray-100"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              <svg
-                className="w-5 h-5 text-gray-700"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+            <button className="sm:hidden p-2 rounded-lg hover:bg-gray-100" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+              <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 {mobileMenuOpen ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 )}
               </svg>
             </button>
           </div>
         </div>
+
         {/* Mobile search */}
         <div className="sm:hidden pb-3">
-          <form onSubmit={handleSearch} className="flex">
-            <div className="flex w-full border-2 border-green-600 rounded-full overflow-hidden">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Tìm sản phẩm..."
-                className="flex-1 px-3 py-2 text-base outline-none"
-              />
-              <button
-                type="submit"
-                className="bg-green-600 text-white px-4 py-2"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-              </button>
-            </div>
-          </form>
+          <div ref={mobileSearchWrapperRef} className="relative">
+            <form onSubmit={handleSearch} className="flex">
+              <div className="flex w-full border-2 border-green-600 rounded-full overflow-hidden">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => handleSearchChange(e.target.value)}
+                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Tìm sản phẩm..."
+                  className="flex-1 px-3 py-2 text-base outline-none"
+                />
+                <button type="submit" className="bg-green-600 text-white px-4 py-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </button>
+              </div>
+            </form>
+            {showSuggestions && <SuggestionsDropdown suggestions={suggestions} />}
+          </div>
         </div>
       </div>
 
@@ -399,77 +388,59 @@ export default function Header() {
       <div className="border-t border-gray-100 bg-white hidden sm:block">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
-            {/* Trang chủ */}
             <Link
               href="/"
               className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
-                pathname === '/'
-                  ? 'border-green-600 text-green-700'
-                  : 'border-transparent text-gray-600 hover:text-green-700 hover:border-green-300'
+                pathname === '/' ? 'border-green-600 text-green-700' : 'border-transparent text-gray-600 hover:text-green-700 hover:border-green-300'
               }`}
             >
               🏠 Trang chủ
             </Link>
             <span className="w-px h-5 bg-gray-200 flex-shrink-0" />
-            {/* Tất cả */}
             <Link
               href="/san-pham"
               className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
-                pathname === '/san-pham'
-                  ? 'border-green-600 text-green-700'
-                  : 'border-transparent text-gray-600 hover:text-green-700 hover:border-green-300'
+                pathname === '/san-pham' ? 'border-green-600 text-green-700' : 'border-transparent text-gray-600 hover:text-green-700 hover:border-green-300'
               }`}
             >
               🛒 Tất cả
             </Link>
             <span className="w-px h-5 bg-gray-200 flex-shrink-0" />
-            <span className="text-xs text-blue-500 font-semibold px-1 whitespace-nowrap flex-shrink-0">
-              Dịch vụ
-            </span>
-            {categories
-              .filter(c => c.type === 'service')
-              .map(cat => (
-                <Link
-                  key={cat.id}
-                  href={`/san-pham?category=${cat.id}`}
-                  className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
-                    pathname.includes('san-pham') &&
-                    typeof window !== 'undefined' &&
-                    new URLSearchParams(window.location.search).get(
-                      'category',
-                    ) === cat.id
-                      ? 'border-blue-600 text-blue-700'
-                      : 'border-transparent text-gray-600 hover:text-blue-700 hover:border-blue-300'
-                  }`}
-                >
-                  <span>{cat.icon}</span>
-                  {cat.label}
-                </Link>
-              ))}
+            <span className="text-xs text-blue-500 font-semibold px-1 whitespace-nowrap flex-shrink-0">Dịch vụ</span>
+            {categories.filter(c => c.type === 'service').map(cat => (
+              <Link
+                key={cat.id}
+                href={`/san-pham?category=${cat.id}`}
+                className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
+                  pathname.includes('san-pham') &&
+                  typeof window !== 'undefined' &&
+                  new URLSearchParams(window.location.search).get('category') === cat.id
+                    ? 'border-blue-600 text-blue-700'
+                    : 'border-transparent text-gray-600 hover:text-blue-700 hover:border-blue-300'
+                }`}
+              >
+                <span>{cat.icon}</span>
+                {cat.label}
+              </Link>
+            ))}
             <span className="w-px h-5 bg-gray-200 flex-shrink-0" />
-            <span className="text-xs text-green-600 font-semibold px-1 whitespace-nowrap flex-shrink-0">
-              Sản phẩm
-            </span>
-            {categories
-              .filter(c => c.type === 'product')
-              .map(cat => (
-                <Link
-                  key={cat.id}
-                  href={`/san-pham?category=${cat.id}`}
-                  className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
-                    pathname.includes('san-pham') &&
-                    typeof window !== 'undefined' &&
-                    new URLSearchParams(window.location.search).get(
-                      'category',
-                    ) === cat.id
-                      ? 'border-green-600 text-green-700'
-                      : 'border-transparent text-gray-600 hover:text-green-700 hover:border-green-300'
-                  }`}
-                >
-                  <span>{cat.icon}</span>
-                  {cat.label}
-                </Link>
-              ))}
+            <span className="text-xs text-green-600 font-semibold px-1 whitespace-nowrap flex-shrink-0">Sản phẩm</span>
+            {categories.filter(c => c.type === 'product').map(cat => (
+              <Link
+                key={cat.id}
+                href={`/san-pham?category=${cat.id}`}
+                className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
+                  pathname.includes('san-pham') &&
+                  typeof window !== 'undefined' &&
+                  new URLSearchParams(window.location.search).get('category') === cat.id
+                    ? 'border-green-600 text-green-700'
+                    : 'border-transparent text-gray-600 hover:text-green-700 hover:border-green-300'
+                }`}
+              >
+                <span>{cat.icon}</span>
+                {cat.label}
+              </Link>
+            ))}
           </div>
         </div>
       </div>
@@ -477,52 +448,26 @@ export default function Header() {
       {/* Mobile nav menu */}
       {mobileMenuOpen && (
         <div className="sm:hidden bg-white border-t border-gray-200 py-2">
-          <Link
-            href="/"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-green-700 hover:bg-green-50"
-          >
+          <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-green-700 hover:bg-green-50">
             🏠 Trang chủ
           </Link>
-          <Link
-            href="/san-pham"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700"
-          >
+          <Link href="/san-pham" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700">
             🛒 Tất cả
           </Link>
-          <p className="px-4 pt-2 pb-1 text-xs text-blue-500 font-semibold uppercase">
-            Dịch vụ
-          </p>
-          {categories
-            .filter(c => c.type === 'service')
-            .map(cat => (
-              <Link
-                key={cat.id}
-                href={`/san-pham?category=${cat.id}`}
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700"
-              >
-                <span>{cat.icon}</span>
-                {cat.label}
-              </Link>
-            ))}
-          <p className="px-4 pt-2 pb-1 text-xs text-green-600 font-semibold uppercase">
-            Sản phẩm
-          </p>
-          {categories
-            .filter(c => c.type === 'product')
-            .map(cat => (
-              <Link
-                key={cat.id}
-                href={`/san-pham?category=${cat.id}`}
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700"
-              >
-                <span>{cat.icon}</span>
-                {cat.label}
-              </Link>
-            ))}
+          <p className="px-4 pt-2 pb-1 text-xs text-blue-500 font-semibold uppercase">Dịch vụ</p>
+          {categories.filter(c => c.type === 'service').map(cat => (
+            <Link key={cat.id} href={`/san-pham?category=${cat.id}`} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+              <span>{cat.icon}</span>
+              {cat.label}
+            </Link>
+          ))}
+          <p className="px-4 pt-2 pb-1 text-xs text-green-600 font-semibold uppercase">Sản phẩm</p>
+          {categories.filter(c => c.type === 'product').map(cat => (
+            <Link key={cat.id} href={`/san-pham?category=${cat.id}`} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700">
+              <span>{cat.icon}</span>
+              {cat.label}
+            </Link>
+          ))}
         </div>
       )}
     </header>
