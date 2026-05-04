@@ -162,24 +162,6 @@ export default async function HomePage() {
 
       <CategorySections products={allProducts} />
 
-      {/* Stats bar */}
-      <section className="bg-green-800 text-white py-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-            {[
-              { value: "30+", label: "Năm kinh nghiệm" },
-              { value: "200+", label: "Sản phẩm" },
-              { value: "50.000+", label: "Nông dân tin dùng" },
-              { value: "11/11", label: "Huyện phủ sóng" },
-            ].map((s) => (
-              <div key={s.label}>
-                <div className="text-3xl font-bold text-green-300 mb-1">{s.value}</div>
-                <div className="text-green-200 text-sm">{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
     </div>
   );
 }
