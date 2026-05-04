@@ -7,6 +7,7 @@ import Link from "next/link";
 import ProductCard from "@/app/components/ProductCard";
 import { categories, formatPrice } from "@/app/lib/data";
 import type { Product } from "@/app/lib/data";
+import { removeAccents } from "@/app/lib/utils";
 import type { BusinessCard } from "./page";
 
 const sortOptions = [
@@ -35,9 +36,9 @@ export default function ProductsClient({ instituteProducts, businesses }: Props)
     let list = [...instituteProducts];
     if (activeCategory !== "tat-ca") list = list.filter((p) => p.category === activeCategory);
     if (searchQuery) {
-      const q = searchQuery.toLowerCase();
+      const q = removeAccents(searchQuery);
       list = list.filter(
-        (p) => p.name.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q) || p.origin.toLowerCase().includes(q)
+        (p) => removeAccents(p.name).includes(q) || removeAccents(p.desc).includes(q) || removeAccents(p.origin).includes(q)
       );
     }
     switch (sortBy) {
