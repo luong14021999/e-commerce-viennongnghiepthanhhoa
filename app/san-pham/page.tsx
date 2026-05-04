@@ -57,23 +57,15 @@ function dbRowToProduct(row: any): Product {
 export default async function ProductsPage() {
   const supabase = await createClient();
 
-  const [instituteRes, businessRes] = await Promise.all([
-    supabase
-      .from("products")
-      .select("*, product_images(id, url, position)")
-      .eq("status", "approved")
-      .is("seller_id", null)
-      .order("sold", { ascending: false }),
-    supabase
-      .from("products")
-      .select("*, product_images(id, url, position)")
-      .eq("status", "approved")
-      .not("seller_id", "is", null)
-      .order("submitted_at", { ascending: false }),
-  ]);
+  const { data: allProductsData } = await supabase
+    .from("products")
+    .select("*, product_images(id, url, position)")
+    .eq("status", "approved")
+    .order("sold", { ascending: false });
 
-  const instituteProducts = (instituteRes.data ?? []).map(dbRowToProduct);
-  const businessProducts  = (businessRes.data ?? []).map(dbRowToProduct);
+  const allProducts     = (allProductsData ?? []).map(dbRowToProduct);
+  const instituteProducts = allProducts.filter((p) => p.sellerName === "Viện Nông Nghiệp Thanh Hóa");
+  const businessProducts  = allProducts.filter((p) => p.sellerName !== "Viện Nông Nghiệp Thanh Hóa" && !!p.sellerId);
 
   const sellerIds = [
     ...new Set(businessProducts.map((p) => p.sellerId).filter(Boolean)),
