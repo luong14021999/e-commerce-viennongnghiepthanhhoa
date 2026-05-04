@@ -8,10 +8,11 @@ import { useProducts } from "@/app/context/ProductContext";
 import { formatPrice } from "@/app/lib/data";
 import type { Product, ProductStatus } from "@/app/lib/data";
 import EditProductModal from "./EditProductModal";
+import { getBusinessesAction, setBusinessVerifiedAction, type BusinessInfo } from "@/lib/actions";
 
 const INSTITUTE_NAME = "Viện Nông Nghiệp Thanh Hóa";
 type FilterTab = "all" | ProductStatus;
-type Section = "institute" | "businesses";
+type Section = "institute" | "businesses" | "manage-biz";
 
 const TAB_LABELS: { key: FilterTab; label: string; color: string }[] = [
   { key: "all",      label: "Tất cả",    color: "bg-gray-600"  },
@@ -35,9 +36,35 @@ export default function AdminPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Business management state
+  const [businesses, setBusinesses] = useState<BusinessInfo[]>([]);
+  const [loadingBiz, setLoadingBiz] = useState(false);
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
+
   useEffect(() => {
     if (!isLoading && (!user || user.role !== "admin")) router.push("/dang-nhap");
   }, [user, isLoading, router]);
+
+  useEffect(() => {
+    if (section === "manage-biz" && businesses.length === 0) {
+      setLoadingBiz(true);
+      getBusinessesAction().then((data) => {
+        setBusinesses(data);
+        setLoadingBiz(false);
+      });
+    }
+  }, [section, businesses.length]);
+
+  async function handleToggleVerify(biz: BusinessInfo) {
+    setVerifyingId(biz.id);
+    const result = await setBusinessVerifiedAction(biz.id, !biz.verified);
+    if (result.ok) {
+      setBusinesses((prev) =>
+        prev.map((b) => b.id === biz.id ? { ...b, verified: !biz.verified } : b)
+      );
+    }
+    setVerifyingId(null);
+  }
 
   if (isLoading || !user || user.role !== "admin") return null;
 
@@ -175,6 +202,13 @@ export default function AdminPage() {
             🏪 Doanh nghiệp đối tác
             <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${section === "businesses" ? "bg-white/20" : "bg-gray-100 text-gray-600"}`}>{bizSellerIds.length}</span>
           </button>
+          <button
+            onClick={() => setSection("manage-biz")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-colors ${section === "manage-biz" ? "bg-purple-600 text-white shadow" : "text-gray-500 hover:text-gray-800"}`}
+          >
+            🏢 Quản lý doanh nghiệp
+            <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${section === "manage-biz" ? "bg-white/20" : "bg-gray-100 text-gray-600"}`}>{businesses.length}</span>
+          </button>
         </div>
 
         {/* ── INSTITUTE SECTION ── */}
@@ -214,6 +248,92 @@ export default function AdminPage() {
           ) : (
             <div className="space-y-4">
               {filteredInstitute.map((p) => <ProductCard key={p.id} p={p} />)}
+            </div>
+          )}
+        </>)}
+
+        {/* ── MANAGE BUSINESSES SECTION ── */}
+        {section === "manage-biz" && (<>
+          {loadingBiz ? (
+            <div className="flex items-center justify-center py-24">
+              <svg className="animate-spin w-8 h-8 text-purple-600" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+            </div>
+          ) : businesses.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-gray-200 py-20 text-center">
+              <div className="text-5xl mb-4">🏢</div>
+              <p className="text-gray-500 font-medium">Chưa có doanh nghiệp nào đăng ký</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {businesses.map((biz) => (
+                <div key={biz.id} className="bg-white rounded-2xl border border-gray-200 p-5 flex gap-4 items-start flex-wrap md:flex-nowrap">
+                  {/* Icon */}
+                  <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">🏢</div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-3 flex-wrap">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-bold text-gray-900 text-base">{biz.businessName || "(Chưa có tên)"}</h3>
+                          {biz.verified
+                            ? <span className="bg-green-100 text-green-700 text-xs font-bold px-2.5 py-0.5 rounded-full">✅ Đã xác minh</span>
+                            : <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2.5 py-0.5 rounded-full">⏳ Chờ xác minh</span>
+                          }
+                        </div>
+                        <p className="text-sm text-gray-500 mt-0.5">
+                          {biz.category && <span>📁 {biz.category}&nbsp;•&nbsp;</span>}
+                          {biz.taxCode && <span>🔢 MST: {biz.taxCode}&nbsp;•&nbsp;</span>}
+                          <span>📅 {new Date(biz.createdAt).toLocaleDateString("vi-VN")}</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    {biz.businessAddress && (
+                      <p className="text-sm text-gray-600 mt-1.5">📍 {biz.businessAddress}</p>
+                    )}
+                    {biz.description && (
+                      <p className="text-sm text-gray-500 mt-1 line-clamp-2">{biz.description}</p>
+                    )}
+
+                    {/* Contact */}
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2.5 text-xs text-gray-500">
+                      {biz.contactName  && <span>👤 {biz.contactName}</span>}
+                      {biz.contactPhone && <span>📞 {biz.contactPhone}</span>}
+                      {biz.contactEmail && <span>✉️ {biz.contactEmail}</span>}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-2 mt-4 flex-wrap">
+                      <button
+                        onClick={() => handleToggleVerify(biz)}
+                        disabled={verifyingId === biz.id}
+                        className={`flex items-center gap-1.5 font-semibold text-sm px-4 py-2 rounded-xl transition-colors disabled:opacity-60 ${
+                          biz.verified
+                            ? "bg-red-50 hover:bg-red-100 text-red-700 border border-red-200"
+                            : "bg-green-600 hover:bg-green-700 text-white"
+                        }`}
+                      >
+                        {verifyingId === biz.id
+                          ? <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                          : biz.verified
+                            ? "Huỷ xác minh"
+                            : "✅ Xác minh doanh nghiệp"
+                        }
+                      </button>
+                      <Link
+                        href={`/doanh-nghiep/${biz.id}`}
+                        className="flex items-center gap-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 font-semibold text-sm px-4 py-2 rounded-xl border border-gray-200 transition-colors"
+                      >
+                        Xem gian hàng →
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </>)}
