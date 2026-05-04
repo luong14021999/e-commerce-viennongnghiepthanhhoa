@@ -9,10 +9,11 @@ import { useProducts } from "@/app/context/ProductContext";
 import { formatPrice } from "@/app/lib/data";
 import type { Product, ProductStatus } from "@/app/lib/data";
 import EditProductModal from "./EditProductModal";
+import AdminOrders from "./AdminOrders";
 
 const INSTITUTE_NAME = "Viện Nông Nghiệp Thanh Hóa";
 type FilterTab = "all" | ProductStatus;
-type Section = "institute" | "businesses";
+type Section = "institute" | "businesses" | "orders";
 
 const TAB_LABELS: { key: FilterTab; label: string; color: string }[] = [
   { key: "all",      label: "Tất cả",    color: "bg-gray-600"  },
@@ -176,6 +177,12 @@ export default function AdminPage() {
             🏪 Doanh nghiệp đối tác
             <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${section === "businesses" ? "bg-white/20" : "bg-gray-100 text-gray-600"}`}>{bizSellerIds.length}</span>
           </button>
+          <button
+            onClick={() => setSection("orders")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-colors ${section === "orders" ? "bg-amber-600 text-white shadow" : "text-gray-500 hover:text-gray-800"}`}
+          >
+            📦 Đơn hàng khách
+          </button>
         </div>
 
         {/* ── INSTITUTE SECTION ── */}
@@ -218,6 +225,9 @@ export default function AdminPage() {
             </div>
           )}
         </>)}
+
+        {/* ── ORDERS SECTION ── */}
+        {section === "orders" && <AdminOrders />}
 
         {/* ── BUSINESSES SECTION ── */}
         {section === "businesses" && (<>
