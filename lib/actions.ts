@@ -57,8 +57,6 @@ export async function insertBusinessProfileAction(
     description: string;
   }
 ): Promise<void> {
-  const admin = getAdminClient();
-  // Use service-role client to bypass RLS
   const supabase = createAdminClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
@@ -71,7 +69,48 @@ export async function insertBusinessProfileAction(
     description: data.description,
     verified: false,
   });
-  void admin; // satisfy linter
+}
+
+export async function updateBusinessProfileAction(
+  data: {
+    businessName: string;
+    taxCode: string;
+    businessAddress: string;
+    category: string;
+    description: string;
+    contactName: string;
+    contactEmail: string;
+  }
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok: false, error: "Chưa đăng nhập" };
+
+    const admin = createAdminClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    const [bpRes, profRes] = await Promise.all([
+      admin.from("business_profiles").update({
+        business_name: data.businessName,
+        tax_code: data.taxCode,
+        business_address: data.businessAddress,
+        category: data.category,
+        description: data.description,
+      }).eq("id", user.id),
+      admin.from("profiles").update({
+        name: data.contactName,
+        email: data.contactEmail,
+      }).eq("id", user.id),
+    ]);
+
+    if (bpRes.error) return { ok: false, error: bpRes.error.message };
+    if (profRes.error) return { ok: false, error: profRes.error.message };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Lỗi hệ thống" };
+  }
 }
 
 type OrderItem = {

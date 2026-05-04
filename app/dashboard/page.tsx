@@ -16,14 +16,42 @@ const STATUS_LABEL: Record<string, { label: string; color: string; bg: string }>
 };
 
 export default function DashboardPage() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, updateBusinessProfile } = useAuth();
   const { getBySeller, deleteProduct } = useProducts();
   const router = useRouter();
+
   const [editProduct, setEditProduct] = useState<Product | null>(null);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    businessName: "",
+    taxCode: "",
+    businessAddress: "",
+    category: "",
+    description: "",
+    contactName: "",
+    contactEmail: "",
+  });
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileError, setProfileError] = useState("");
+  const [profileSuccess, setProfileSuccess] = useState(false);
 
   useEffect(() => {
     if (!isLoading && (!user || user.role !== "business")) router.push("/dang-nhap");
   }, [user, isLoading, router]);
+
+  useEffect(() => {
+    if (user?.business) {
+      setProfileForm({
+        businessName: user.business.businessName,
+        taxCode: user.business.taxCode,
+        businessAddress: user.business.businessAddress,
+        category: user.business.category,
+        description: user.business.description,
+        contactName: user.name,
+        contactEmail: user.email,
+      });
+    }
+  }, [user]);
 
   if (isLoading || !user || user.role !== "business") return null;
 
@@ -34,6 +62,23 @@ export default function DashboardPage() {
 
   function getCategoryLabel(id: string) {
     return categories.find((c) => c.id === id)?.label ?? id;
+  }
+
+  function setField(field: keyof typeof profileForm, value: string) {
+    setProfileForm((f) => ({ ...f, [field]: value }));
+  }
+
+  async function handleProfileSave(e: React.FormEvent) {
+    e.preventDefault();
+    setProfileSaving(true);
+    setProfileError("");
+    setProfileSuccess(false);
+    const result = await updateBusinessProfile(profileForm);
+    setProfileSaving(false);
+    if (!result.ok) { setProfileError(result.error ?? "Có lỗi xảy ra"); return; }
+    setProfileSuccess(true);
+    setEditingProfile(false);
+    setTimeout(() => setProfileSuccess(false), 3000);
   }
 
   return (
@@ -108,6 +153,125 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
+
+        {/* ── Business profile card ── */}
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden mb-6">
+          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">🏢 Thông tin doanh nghiệp</h2>
+            {!editingProfile && (
+              <button
+                onClick={() => setEditingProfile(true)}
+                className="flex items-center gap-1.5 text-sm font-semibold text-blue-600 hover:text-blue-800 px-3 py-1.5 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                Chỉnh sửa
+              </button>
+            )}
+          </div>
+
+          {profileSuccess && (
+            <div className="mx-6 mt-4 bg-green-50 border border-green-200 text-green-700 text-sm rounded-xl px-4 py-3 flex items-center gap-2">
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
+              Cập nhật thông tin thành công!
+            </div>
+          )}
+
+          {!editingProfile ? (
+            /* ── View mode ── */
+            <div className="p-6 grid sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+              {[
+                { label: "Tên doanh nghiệp", value: user.business?.businessName },
+                { label: "Mã số thuế", value: user.business?.taxCode },
+                { label: "Địa chỉ kinh doanh", value: user.business?.businessAddress },
+                { label: "Lĩnh vực chính", value: getCategoryLabel(user.business?.category ?? "") },
+                { label: "Người liên hệ", value: user.name },
+                { label: "Số điện thoại", value: user.phone },
+                { label: "Email liên hệ", value: user.email || "—" },
+                { label: "Trạng thái", value: user.business?.verified ? "✓ Đã xác minh" : "⏳ Chờ xác minh" },
+              ].map(({ label, value }) => (
+                <div key={label}>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">{label}</p>
+                  <p className="text-gray-800 font-medium">{value ?? "—"}</p>
+                </div>
+              ))}
+              {user.business?.description && (
+                <div className="sm:col-span-2">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Mô tả doanh nghiệp</p>
+                  <p className="text-gray-700 whitespace-pre-line">{user.business.description}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* ── Edit mode ── */
+            <form onSubmit={handleProfileSave} className="p-6 space-y-4">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Tên doanh nghiệp <span className="text-red-500">*</span></label>
+                  <input required value={profileForm.businessName} onChange={(e) => setField("businessName", e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Mã số thuế <span className="text-red-500">*</span></label>
+                  <input required value={profileForm.taxCode} onChange={(e) => setField("taxCode", e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Địa chỉ kinh doanh <span className="text-red-500">*</span></label>
+                  <input required value={profileForm.businessAddress} onChange={(e) => setField("businessAddress", e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Lĩnh vực chính</label>
+                  <select value={profileForm.category} onChange={(e) => setField("category", e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white">
+                    <option value="">-- Chọn danh mục --</option>
+                    {categories.filter((c) => c.id !== "tat-ca").map((c) => (
+                      <option key={c.id} value={c.id}>{c.icon} {c.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Người liên hệ</label>
+                  <input value={profileForm.contactName} onChange={(e) => setField("contactName", e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email liên hệ</label>
+                  <input type="email" value={profileForm.contactEmail} onChange={(e) => setField("contactEmail", e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Mô tả doanh nghiệp</label>
+                <textarea rows={3} value={profileForm.description} onChange={(e) => setField("description", e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none" />
+              </div>
+
+              {profileError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3">{profileError}</div>
+              )}
+
+              <div className="flex gap-3 pt-1">
+                <button type="button" onClick={() => { setEditingProfile(false); setProfileError(""); }}
+                  disabled={profileSaving}
+                  className="px-5 py-2.5 border-2 border-gray-200 text-gray-600 font-semibold rounded-xl hover:bg-gray-50 transition-colors text-sm">
+                  Hủy
+                </button>
+                <button type="submit" disabled={profileSaving}
+                  className="px-6 py-2.5 bg-green-700 hover:bg-green-600 disabled:bg-gray-400 text-white font-bold rounded-xl transition-colors text-sm flex items-center gap-2">
+                  {profileSaving ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                      Đang lưu...
+                    </>
+                  ) : "Lưu thay đổi"}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
 
         {/* Product table */}
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
