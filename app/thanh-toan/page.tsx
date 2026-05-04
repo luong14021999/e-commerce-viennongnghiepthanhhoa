@@ -149,9 +149,37 @@ export default function CheckoutPage() {
         subtotal: product.price * quantity,
       })),
     });
-    setLoading(false);
-    if (!result.ok) return;
+
+    if (!result.ok || !result.orderId) { setLoading(false); return; }
+
     clearCart();
+
+    // COD: show success screen directly; online payment: redirect to PayOS
+    if (paymentMethod === "cod") {
+      setLoading(false);
+      setStep("success");
+      return;
+    }
+
+    // Create PayOS payment link and redirect
+    try {
+      const res = await fetch("/api/payment/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: result.orderId }),
+      });
+      const { checkoutUrl, error } = await res.json();
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+        return;
+      }
+      console.error("PayOS error:", error);
+    } catch (e) {
+      console.error("Payment redirect failed:", e);
+    }
+
+    // Fallback: show success even if PayOS redirect fails
+    setLoading(false);
     setStep("success");
   }
 

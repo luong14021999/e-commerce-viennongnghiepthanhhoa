@@ -20,6 +20,7 @@ type OrderItem = {
 type AdminOrder = {
   id: string;
   status: string;
+  payment_status: string | null;
   shipping_name: string;
   shipping_phone: string;
   shipping_address: string;
@@ -202,6 +203,11 @@ export default function AdminOrders() {
                       <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${s.bg} ${s.color}`}>
                         {s.icon} {s.label}
                       </span>
+                      {order.payment_method !== "cod" && (
+                        order.payment_status === "paid"
+                          ? <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">✅ Đã thanh toán</span>
+                          : <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">⏳ Chờ thanh toán</span>
+                      )}
                     </div>
                     <p className="text-xs text-gray-400 mb-1">{date}</p>
                     <p className="text-sm font-semibold text-gray-800">

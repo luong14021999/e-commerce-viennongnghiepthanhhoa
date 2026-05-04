@@ -156,6 +156,7 @@ export async function createOrderAction(input: CreateOrderInput): Promise<{ ok: 
       shipping_fee: input.shippingFee,
       grand_total: input.grandTotal,
       payment_method: input.paymentMethod,
+      payment_status: input.paymentMethod === "cod" ? null : "pending",
     })
     .select("id")
     .single();
