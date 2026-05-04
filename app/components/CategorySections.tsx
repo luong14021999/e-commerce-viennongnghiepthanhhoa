@@ -1,29 +1,18 @@
-"use client";
-
-import { useMemo } from "react";
 import Link from "next/link";
 import ProductCard from "@/app/components/ProductCard";
-import { useProducts } from "@/app/context/ProductContext";
 import { categories } from "@/app/lib/data";
+import type { Product } from "@/app/lib/data";
 
 const serviceCategories = categories.filter((c) => c.type === "service");
 const productCategories = categories.filter((c) => c.type === "product");
 
-export default function CategorySections() {
-  const { sellerProducts } = useProducts();
-
-  const approvedProducts = useMemo(
-    () => sellerProducts.filter((p) => p.status === "approved"),
-    [sellerProducts]
-  );
-
+export default function CategorySections({ products }: { products: Product[] }) {
   function getItems(categoryId: string) {
-    return approvedProducts.filter((p) => p.category === categoryId);
+    return products.filter((p) => p.category === categoryId);
   }
 
   return (
     <>
-      {/* One section per product category */}
       {productCategories.map((cat, idx) => {
         const items = getItems(cat.id);
         if (items.length === 0) return null;
@@ -40,16 +29,13 @@ export default function CategorySections() {
                 </Link>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {items.map((p) => (
-                  <ProductCard key={p.id} product={p} />
-                ))}
+                {items.map((p) => <ProductCard key={p.id} product={p} />)}
               </div>
             </div>
           </section>
         );
       })}
 
-      {/* One section per service category */}
       {serviceCategories.map((cat, idx) => {
         const items = getItems(cat.id);
         if (items.length === 0) return null;
@@ -66,9 +52,7 @@ export default function CategorySections() {
                 </Link>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {items.map((p) => (
-                  <ProductCard key={p.id} product={p} />
-                ))}
+                {items.map((p) => <ProductCard key={p.id} product={p} />)}
               </div>
             </div>
           </section>

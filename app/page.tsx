@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
 import HeroBanner from "./components/HeroBanner";
 import CategorySections from "./components/CategorySections";
 import BusinessProductsSection from "./components/BusinessProductsSection";
+import type { HomepageBusiness } from "./components/BusinessProductsSection";
 import { categories } from "./lib/data";
+import type { Product, ProductStatus } from "./lib/data";
+
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Trang chủ",
@@ -19,10 +24,80 @@ const trustBadges = [
 const serviceCategories = categories.filter((c) => c.type === "service");
 const productCategories = categories.filter((c) => c.type === "product");
 
-export default function HomePage() {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function dbRowToProduct(row: any): Product {
+  const images: string[] = (row.product_images ?? [])
+    .sort((a: { position: number }, b: { position: number }) => a.position - b.position)
+    .map((img: { url: string }) => img.url);
+  return {
+    id: row.id,
+    name: row.name,
+    category: row.category,
+    type: row.type,
+    price: row.price,
+    originalPrice: row.original_price,
+    unit: row.unit,
+    icon: row.icon,
+    bg: row.bg,
+    tag: row.tag ?? undefined,
+    tagColor: row.tag_color ?? undefined,
+    rating: row.rating,
+    reviews: row.reviews,
+    sold: row.sold,
+    desc: row.description,
+    specs: row.specs ?? [],
+    origin: row.origin,
+    certifications: row.certifications ?? [],
+    imageUrl: images[0],
+    images: images.length > 0 ? images : undefined,
+    sellerId: row.seller_id ?? undefined,
+    sellerName: row.seller_name ?? undefined,
+    status: row.status as ProductStatus,
+    submittedAt: row.submitted_at,
+    rejectionReason: row.rejection_reason ?? undefined,
+  };
+}
+
+export default async function HomePage() {
+  const supabase = await createClient();
+
+  const { data: productsData } = await supabase
+    .from("products")
+    .select("*, product_images(id, url, position)")
+    .eq("status", "approved")
+    .order("sold", { ascending: false });
+
+  const allProducts = (productsData ?? []).map(dbRowToProduct);
+  const businessProducts = allProducts.filter((p) => !!p.sellerId);
+  const sellerIds = [
+    ...new Set(businessProducts.map((p) => p.sellerId).filter(Boolean)),
+  ] as string[];
+
+  const { data: profileData } = sellerIds.length > 0
+    ? await supabase
+        .from("business_profiles")
+        .select("id, business_name, business_address, description, verified")
+        .in("id", sellerIds)
+    : { data: [] };
+
+  const profileMap = new Map((profileData ?? []).map((p) => [p.id, p]));
+
+  const businesses: HomepageBusiness[] = sellerIds.map((sellerId) => {
+    const bizProds = businessProducts.filter((p) => p.sellerId === sellerId);
+    const bp = profileMap.get(sellerId);
+    return {
+      sellerId,
+      sellerName:   bp?.business_name    ?? bizProds[0]?.sellerName ?? sellerId,
+      verified:     bp?.verified         ?? false,
+      address:      bp?.business_address ?? "",
+      description:  bp?.description      ?? "",
+      productCount: bizProds.length,
+      totalSold:    bizProds.reduce((s, p) => s + p.sold, 0),
+    };
+  });
+
   return (
     <div>
-      {/* Hero banner */}
       <HeroBanner />
 
       {/* Trust badges */}
@@ -83,11 +158,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Business partner section */}
-      <BusinessProductsSection />
+      <BusinessProductsSection businesses={businesses} />
 
-      {/* Per-category sections (static + admin-uploaded products merged) */}
-      <CategorySections />
+      <CategorySections products={allProducts} />
 
       {/* Stats bar */}
       <section className="bg-green-800 text-white py-10">
