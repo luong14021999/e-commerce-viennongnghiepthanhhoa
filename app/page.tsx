@@ -83,11 +83,11 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Business partner section */}
+      <BusinessProductsSection />
+
       {/* Per-category sections (static + admin-uploaded products merged) */}
       <CategorySections />
-
-      {/* Business partner products */}
-      <BusinessProductsSection />
 
       {/* Stats bar */}
       <section className="bg-green-800 text-white py-10">
