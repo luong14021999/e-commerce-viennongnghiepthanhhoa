@@ -27,7 +27,8 @@ export default function AdminPage() {
 
   const [section, setSection] = useState<Section>("institute");
   const [tab, setTab] = useState<FilterTab>("all");
-  const [expandedBiz, setExpandedBiz] = useState<string | null>(null);
+  const [selectedBiz, setSelectedBiz] = useState<string | null>(null);
+  const [bizTab, setBizTab] = useState<FilterTab>("all");
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [editProduct, setEditProduct] = useState<Product | null>(null);
@@ -219,103 +220,108 @@ export default function AdminPage() {
 
         {/* ── BUSINESSES SECTION ── */}
         {section === "businesses" && (<>
-          {/* Business summary stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-            {[
-              { label: "Doanh nghiệp",  value: bizSellerIds.length,                                          icon: "🏪", bg: "bg-blue-50  border-blue-200  text-blue-700"  },
-              { label: "Chờ duyệt",     value: businessProducts.filter((p) => p.status === "pending").length, icon: "⏳", bg: "bg-amber-50 border-amber-200 text-amber-700" },
-              { label: "Đã duyệt",      value: businessProducts.filter((p) => p.status === "approved").length,icon: "✅", bg: "bg-green-50 border-green-200 text-green-700" },
-              { label: "Tổng sản phẩm", value: businessProducts.length,                                      icon: "📦", bg: "bg-gray-50  border-gray-200  text-gray-700"  },
-            ].map((s) => (
-              <div key={s.label} className={`rounded-2xl border p-5 ${s.bg}`}>
-                <div className="text-2xl mb-1">{s.icon}</div>
-                <div className="text-3xl font-bold mb-0.5">{s.value}</div>
-                <div className="text-sm font-medium">{s.label}</div>
-              </div>
-            ))}
-          </div>
-
           {bizSellerIds.length === 0 ? (
             <div className="bg-white rounded-2xl border border-gray-200 py-16 text-center">
               <div className="text-5xl mb-4">🏪</div>
               <p className="text-gray-500 font-medium">Chưa có doanh nghiệp nào đăng sản phẩm</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {bizSellerIds.map((sid) => {
-                const prods = getSellerProducts(sid);
-                const sellerName = prods[0]?.sellerName ?? sid;
-                const pending  = prods.filter((p) => p.status === "pending").length;
-                const approved = prods.filter((p) => p.status === "approved").length;
-                const rejected = prods.filter((p) => p.status === "rejected").length;
-                const isExpanded = expandedBiz === sid;
+            <div className="flex gap-6 items-start">
+              {/* ── Left sidebar: business list ── */}
+              <div className="w-72 flex-shrink-0 space-y-2">
+                {bizSellerIds.map((sid) => {
+                  const prods = getSellerProducts(sid);
+                  const sellerName = prods[0]?.sellerName ?? sid;
+                  const pending  = prods.filter((p) => p.status === "pending").length;
+                  const approved = prods.filter((p) => p.status === "approved").length;
+                  const rejected = prods.filter((p) => p.status === "rejected").length;
+                  const isActive = selectedBiz === sid;
 
-                return (
-                  <div key={sid} className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                    {/* Business header — click to expand */}
+                  return (
                     <button
-                      onClick={() => setExpandedBiz(isExpanded ? null : sid)}
-                      className="w-full flex items-center gap-4 p-5 hover:bg-gray-50 transition-colors text-left"
+                      key={sid}
+                      onClick={() => { setSelectedBiz(sid); setBizTab("all"); }}
+                      className={`w-full text-left rounded-2xl border p-4 transition-all ${isActive ? "border-blue-500 bg-blue-50 shadow-sm" : "border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50/40"}`}
                     >
-                      <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">🏪</div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-gray-900 text-base leading-tight">{sellerName}</p>
-                        <div className="flex items-center gap-3 mt-1 flex-wrap">
-                          <span className="text-xs text-gray-500">📦 {prods.length} sản phẩm</span>
-                          {pending  > 0 && <span className="text-xs bg-amber-100 text-amber-700 font-semibold px-2 py-0.5 rounded-full">⏳ {pending} chờ duyệt</span>}
-                          {approved > 0 && <span className="text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">✅ {approved} đã duyệt</span>}
-                          {rejected > 0 && <span className="text-xs bg-red-100 text-red-700 font-semibold px-2 py-0.5 rounded-full">❌ {rejected} từ chối</span>}
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-xl flex-shrink-0">🏪</div>
+                        <div className="min-w-0 flex-1">
+                          <p className={`font-bold text-sm leading-snug truncate ${isActive ? "text-blue-800" : "text-gray-900"}`}>{sellerName}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">📦 {prods.length} sản phẩm</p>
                         </div>
                       </div>
-                      <Link
-                        href={`/doanh-nghiep/${sid}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="hidden sm:flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-semibold px-3 py-1.5 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors flex-shrink-0"
-                      >
-                        Xem gian hàng →
-                      </Link>
-                      <svg
-                        className={`w-5 h-5 text-gray-400 flex-shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`}
-                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/>
-                      </svg>
+                      <div className="flex gap-1.5 mt-2.5 flex-wrap">
+                        {pending  > 0 && <span className="text-xs bg-amber-100 text-amber-700 font-semibold px-2 py-0.5 rounded-full">⏳ {pending}</span>}
+                        {approved > 0 && <span className="text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">✅ {approved}</span>}
+                        {rejected > 0 && <span className="text-xs bg-red-100 text-red-700 font-semibold px-2 py-0.5 rounded-full">❌ {rejected}</span>}
+                      </div>
                     </button>
+                  );
+                })}
+              </div>
 
-                    {/* Expanded product list */}
-                    {isExpanded && (
-                      <div className="border-t border-gray-100 divide-y divide-gray-100">
-                        {prods.map((p) => (
-                          <div key={p.id} className="p-5 flex gap-4 items-start flex-wrap md:flex-nowrap hover:bg-gray-50 transition-colors">
-                            <div className={`${p.bg} w-14 h-14 rounded-xl overflow-hidden flex items-center justify-center text-2xl flex-shrink-0`}>
-                              {(p.images?.[0] ?? p.imageUrl) ? <img src={p.images?.[0] ?? p.imageUrl} alt={p.name} className="w-full h-full object-cover" /> : p.icon}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-3 flex-wrap">
-                                <div>
-                                  <h4 className="font-bold text-gray-900">{p.name}</h4>
-                                  <p className="text-xs text-gray-500 mt-0.5">📁 {p.category} &nbsp;•&nbsp; 💰 {p.price > 0 ? formatPrice(p.price) : "Liên hệ"}/{p.unit}</p>
-                                </div>
-                                <div className="flex flex-col items-end gap-1 text-xs flex-shrink-0">
-                                  {p.status === "pending"  && <span className="bg-amber-100 text-amber-700 font-bold px-2.5 py-1 rounded-full">⏳ Chờ duyệt</span>}
-                                  {p.status === "approved" && <span className="bg-green-100 text-green-700 font-bold px-2.5 py-1 rounded-full">✅ Đã duyệt</span>}
-                                  {p.status === "rejected" && <span className="bg-red-100 text-red-700 font-bold px-2.5 py-1 rounded-full">❌ Từ chối</span>}
-                                  <span className="text-gray-400">{p.submittedAt ? new Date(p.submittedAt).toLocaleDateString("vi-VN") : ""}</span>
-                                </div>
-                              </div>
-                              <p className="text-sm text-gray-600 mt-1.5 line-clamp-2">{p.desc}</p>
-                              {p.status === "rejected" && p.rejectionReason && (
-                                <p className="mt-1.5 text-xs text-red-600 bg-red-50 rounded-lg px-3 py-1.5">Lý do từ chối: <span className="font-semibold">{p.rejectionReason}</span></p>
-                              )}
-                              <ProductActions p={p} />
-                            </div>
+              {/* ── Right panel: selected business products ── */}
+              <div className="flex-1 min-w-0">
+                {!selectedBiz ? (
+                  <div className="bg-white rounded-2xl border border-gray-200 py-20 text-center">
+                    <div className="text-5xl mb-4">👈</div>
+                    <p className="text-gray-500 font-medium">Chọn một doanh nghiệp để xem sản phẩm</p>
+                  </div>
+                ) : (() => {
+                  const prods = getSellerProducts(selectedBiz);
+                  const sellerName = prods[0]?.sellerName ?? selectedBiz;
+                  const counts = {
+                    all:      prods.length,
+                    pending:  prods.filter((p) => p.status === "pending").length,
+                    approved: prods.filter((p) => p.status === "approved").length,
+                    rejected: prods.filter((p) => p.status === "rejected").length,
+                  };
+                  const filtered = bizTab === "all" ? prods : prods.filter((p) => p.status === bizTab);
+
+                  return (
+                    <div>
+                      {/* Business header */}
+                      <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-4 flex items-center justify-between gap-3 flex-wrap">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-2xl">🏪</div>
+                          <div>
+                            <h2 className="font-bold text-gray-900 text-lg leading-tight">{sellerName}</h2>
+                            <p className="text-sm text-gray-500 mt-0.5">📦 {prods.length} sản phẩm</p>
                           </div>
+                        </div>
+                        <Link
+                          href={`/doanh-nghiep/${selectedBiz}`}
+                          className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-semibold px-3 py-1.5 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+                        >
+                          Xem gian hàng →
+                        </Link>
+                      </div>
+
+                      {/* Filter tabs */}
+                      <div className="flex gap-2 mb-4 flex-wrap">
+                        {TAB_LABELS.map(({ key, label, color }) => (
+                          <button key={key} onClick={() => setBizTab(key)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-colors ${bizTab === key ? `${color} text-white` : "bg-white border border-gray-200 text-gray-600 hover:border-gray-300"}`}>
+                            {label}
+                            <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${bizTab === key ? "bg-white/20" : "bg-gray-100"}`}>{counts[key]}</span>
+                          </button>
                         ))}
                       </div>
-                    )}
-                  </div>
-                );
-              })}
+
+                      {/* Product list */}
+                      {filtered.length === 0 ? (
+                        <div className="bg-white rounded-2xl border border-gray-200 py-12 text-center">
+                          <p className="text-gray-400 font-medium">Không có sản phẩm nào</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {filtered.map((p) => <ProductCard key={p.id} p={p} />)}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
           )}
         </>)}
