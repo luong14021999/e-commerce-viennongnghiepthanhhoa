@@ -154,31 +154,6 @@ export default function CheckoutPage() {
 
     clearCart();
 
-    // COD: show success screen directly; online payment: redirect to PayOS
-    if (paymentMethod === "cod") {
-      setLoading(false);
-      setStep("success");
-      return;
-    }
-
-    // Create PayOS payment link and redirect
-    try {
-      const res = await fetch("/api/payment/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId: result.orderId }),
-      });
-      const { checkoutUrl, error } = await res.json();
-      if (checkoutUrl) {
-        window.location.href = checkoutUrl;
-        return;
-      }
-      console.error("PayOS error:", error);
-    } catch (e) {
-      console.error("Payment redirect failed:", e);
-    }
-
-    // Fallback: show success even if PayOS redirect fails
     setLoading(false);
     setStep("success");
   }
@@ -387,17 +362,59 @@ export default function CheckoutPage() {
                   ))}
                 </div>
 
-                {paymentMethod === "bank" && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 text-sm">
-                    <p className="font-semibold text-blue-800 mb-2">Thông tin chuyển khoản:</p>
-                    <div className="space-y-1 text-blue-700">
-                      <p>Ngân hàng: <span className="font-bold">Vietcombank</span></p>
-                      <p>Số TK: <span className="font-bold">1234 5678 9012</span></p>
-                      <p>Chủ TK: <span className="font-bold">VIEN NONG NGHIEP THANH HOA</span></p>
-                      <p>Nội dung: <span className="font-bold">{orderCode} - {form.phone}</span></p>
+                {paymentMethod === "bank" && (() => {
+                  const bankId      = process.env.NEXT_PUBLIC_BANK_ID      ?? "MB";
+                  const bankAccount = process.env.NEXT_PUBLIC_BANK_ACCOUNT ?? "0000000000";
+                  const bankName    = process.env.NEXT_PUBLIC_BANK_NAME    ?? "VIEN NONG NGHIEP THANH HOA";
+                  const transferRef = `${orderCode} ${form.phone}`.trim();
+                  const qrUrl = `https://img.vietqr.io/image/${bankId}-${bankAccount}-compact2.png` +
+                    `?amount=${grandTotal}` +
+                    `&addInfo=${encodeURIComponent(transferRef)}` +
+                    `&accountName=${encodeURIComponent(bankName)}`;
+                  return (
+                    <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 overflow-hidden">
+                      {/* QR section */}
+                      <div className="flex flex-col items-center py-5 px-4 border-b border-blue-200">
+                        <p className="text-xs font-semibold text-blue-600 mb-3 uppercase tracking-wide">Quét QR để thanh toán</p>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={qrUrl}
+                          alt="QR chuyển khoản"
+                          className="w-52 h-52 rounded-xl border-4 border-white shadow-md"
+                        />
+                        <p className="text-xs text-blue-500 mt-2">Dùng app ngân hàng bất kỳ để quét</p>
+                      </div>
+                      {/* Bank info */}
+                      <div className="px-5 py-4 space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-blue-600">Ngân hàng</span>
+                          <span className="font-bold text-blue-900">{bankId}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-blue-600">Số tài khoản</span>
+                          <span className="font-bold text-blue-900 tracking-widest">{bankAccount}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-blue-600">Chủ tài khoản</span>
+                          <span className="font-bold text-blue-900 text-right max-w-40">{bankName}</span>
+                        </div>
+                        <div className="flex justify-between items-center pt-1 border-t border-blue-200">
+                          <span className="text-blue-600">Số tiền</span>
+                          <span className="font-bold text-green-700 text-base">{formatPrice(grandTotal)}</span>
+                        </div>
+                        <div className="flex justify-between items-start">
+                          <span className="text-blue-600 flex-shrink-0">Nội dung CK</span>
+                          <span className="font-bold text-blue-900 text-right ml-2 break-all">{transferRef}</span>
+                        </div>
+                      </div>
+                      <div className="bg-amber-50 border-t border-amber-200 px-5 py-3">
+                        <p className="text-xs text-amber-700 font-medium">
+                          ⚠️ Vui lòng ghi đúng nội dung chuyển khoản để đơn hàng được xử lý nhanh nhất.
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 <button
                   onClick={handlePlaceOrder}
@@ -412,6 +429,8 @@ export default function CheckoutPage() {
                       </svg>
                       Đang xử lý đơn hàng...
                     </>
+                  ) : paymentMethod === "bank" ? (
+                    <>✅ Xác nhận đặt hàng – {formatPrice(grandTotal)}</>
                   ) : (
                     <>🛒 Đặt hàng – {formatPrice(grandTotal)}</>
                   )}
