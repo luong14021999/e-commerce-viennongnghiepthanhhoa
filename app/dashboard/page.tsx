@@ -224,13 +224,9 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">Lĩnh vực chính</label>
-                  <select value={profileForm.category} onChange={(e) => setField("category", e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white">
-                    <option value="">-- Chọn danh mục --</option>
-                    {categories.filter((c) => c.id !== "tat-ca").map((c) => (
-                      <option key={c.id} value={c.id}>{c.icon} {c.label}</option>
-                    ))}
-                  </select>
+                  <input type="text" value={profileForm.category} onChange={(e) => setField("category", e.target.value)}
+                    placeholder="VD: Phân bón hữu cơ, Giống cây trồng, Máy nông nghiệp..."
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">Người liên hệ</label>
