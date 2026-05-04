@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { Product, ProductStatus } from "@/app/lib/data";
 import ProductDetailClient from "./ProductDetailClient";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 type Props = { params: Promise<{ id: string }> };
 
