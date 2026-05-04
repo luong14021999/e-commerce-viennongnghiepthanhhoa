@@ -124,7 +124,7 @@ export default function MyOrdersPage() {
                     <div className="flex items-start justify-between gap-3 flex-wrap">
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-bold text-gray-900 text-sm">#{shortId}</span>
+                          <span className="font-bold text-gray-900 text-sm">DH{shortId}</span>
                           <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${s.bg} ${s.color}`}>{s.label}</span>
                         </div>
                         <p className="text-xs text-gray-500 mt-0.5">{date} &nbsp;•&nbsp; {order.order_items.length} sản phẩm</p>

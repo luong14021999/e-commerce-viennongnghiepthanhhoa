@@ -31,7 +31,7 @@ export default function CheckoutPage() {
   const [step, setStep] = useState<Step>("info");
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [loading, setLoading] = useState(false);
-  const [orderCode] = useState("DH" + Date.now().toString().slice(-8));
+  const [confirmedOrderId, setConfirmedOrderId] = useState("");
   const [form, setForm] = useState({ name: "", phone: "", address: "", city: "Thanh Hóa", note: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -153,7 +153,7 @@ export default function CheckoutPage() {
     if (!result.ok || !result.orderId) { setLoading(false); return; }
 
     clearCart();
-
+    setConfirmedOrderId(result.orderId);
     setLoading(false);
     setStep("success");
   }
@@ -169,7 +169,7 @@ export default function CheckoutPage() {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Đặt hàng thành công!</h2>
           <p className="text-gray-500 mb-1">Mã đơn hàng của bạn:</p>
-          <p className="text-2xl font-bold text-green-700 mb-4">{orderCode}</p>
+          <p className="text-2xl font-bold text-green-700 mb-4">DH{confirmedOrderId.slice(0, 8).toUpperCase()}</p>
           <div className="bg-gray-50 rounded-xl p-4 mb-6 text-sm text-left space-y-2">
             <div className="flex justify-between">
               <span className="text-gray-500">Người nhận:</span>
@@ -366,7 +366,7 @@ export default function CheckoutPage() {
                   const bankId      = process.env.NEXT_PUBLIC_BANK_ID      ?? "MB";
                   const bankAccount = process.env.NEXT_PUBLIC_BANK_ACCOUNT ?? "0000000000";
                   const bankName    = process.env.NEXT_PUBLIC_BANK_NAME    ?? "VIEN NONG NGHIEP THANH HOA";
-                  const transferRef = `${orderCode} ${form.phone}`.trim();
+                  const transferRef = `Thanh toan ${form.phone}`.trim();
                   const qrUrl = `https://img.vietqr.io/image/${bankId}-${bankAccount}-compact2.png` +
                     `?amount=${grandTotal}` +
                     `&addInfo=${encodeURIComponent(transferRef)}` +
