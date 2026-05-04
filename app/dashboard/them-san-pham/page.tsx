@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 import { useProducts } from "@/app/context/ProductContext";
-import { categories } from "@/app/lib/data";
 
 const MAX_IMAGES = 6;
 
@@ -172,13 +171,9 @@ export default function AddProductPage() {
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Danh mục <span className="text-red-500">*</span></label>
-                <select value={form.category} onChange={(e) => setField("category", e.target.value)}
-                  className={`w-full px-4 py-2.5 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-green-500 bg-white ${errors.category ? "border-red-400" : "border-gray-300"}`}>
-                  <option value="">-- Chọn danh mục --</option>
-                  {categories.filter((c) => c.type === "product").map((c) => (
-                    <option key={c.id} value={c.id}>{c.icon} {c.label}</option>
-                  ))}
-                </select>
+                <input type="text" value={form.category} onChange={(e) => setField("category", e.target.value)}
+                  placeholder="VD: Phân bón hữu cơ, Giống lúa, Máy nông nghiệp..."
+                  className={`w-full px-4 py-2.5 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.category ? "border-red-400" : "border-gray-300"}`}/>
                 {errors.category && <p className="text-xs text-red-500 mt-1">{errors.category}</p>}
               </div>
               <div>
