@@ -65,7 +65,6 @@ export default function FloatingContact() {
         aria-label={`Gọi hotline ${PHONE}`}
         className="relative flex items-center gap-2.5 bg-red-500 hover:bg-red-600 text-white font-bold px-5 py-3 rounded-full shadow-xl shadow-red-500/40 transition-all hover:scale-105 active:scale-95"
       >
-        {/* Pulse ring */}
         <span className="absolute inset-0 rounded-full bg-red-400 animate-ping opacity-30 pointer-events-none" />
         <svg
           className="w-5 h-5 flex-shrink-0"

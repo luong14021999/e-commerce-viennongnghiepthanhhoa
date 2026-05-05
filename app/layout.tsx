@@ -4,6 +4,7 @@ import "./globals.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import FloatingContact from "./components/FloatingContact";
+import AIChatWidget from "./components/AIChatWidget";
 import { CartProvider } from "./context/CartContext";
 import { AuthProvider } from "./context/AuthContext";
 import { ProductProvider } from "./context/ProductContext";
@@ -43,6 +44,7 @@ export default function RootLayout({
               <main className="flex-1">{children}</main>
               <Footer />
               <FloatingContact />
+              <AIChatWidget />
             </CartProvider>
           </ProductProvider>
         </AuthProvider>
