@@ -10,6 +10,7 @@ import { useCart } from '@/app/context/CartContext';
 import { useProducts } from '@/app/context/ProductContext';
 import ProductCard from '@/app/components/ProductCard';
 import ProductReviews from '@/app/components/ProductReviews';
+import { useReviewStats } from '@/app/context/ReviewStatsContext';
 
 export default function ProductDetailClient({
   product: initialProduct,
@@ -26,6 +27,7 @@ export default function ProductDetailClient({
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const [activeImg, setActiveImg] = useState(0);
+  const reviewStats = useReviewStats(productId);
 
   // Fall back to seller products from context if not in base catalog
   const product =
@@ -143,7 +145,7 @@ export default function ProductDetailClient({
                 {[1, 2, 3, 4, 5].map(s => (
                   <svg
                     key={s}
-                    className={`w-4 h-4 ${s <= Math.round(p.rating) ? 'text-yellow-400' : 'text-gray-200'}`}
+                    className={`w-4 h-4 ${s <= Math.round(reviewStats ? reviewStats.avgRating : p.rating) ? 'text-yellow-400' : 'text-gray-200'}`}
                     fill="currentColor"
                     viewBox="0 0 24 24"
                   >
@@ -151,11 +153,11 @@ export default function ProductDetailClient({
                   </svg>
                 ))}
                 <span className="text-sm font-semibold text-gray-700 ml-1">
-                  {p.rating}
+                  {reviewStats ? reviewStats.avgRating : p.rating}
                 </span>
               </div>
               <span className="text-sm text-gray-500">
-                | {p.reviews} đánh giá
+                | {reviewStats ? reviewStats.count : p.reviews} đánh giá
               </span>
               {isService ? (
                 <span className="text-sm text-gray-500">
