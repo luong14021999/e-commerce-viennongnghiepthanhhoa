@@ -184,3 +184,33 @@ export async function createOrderAction(input: CreateOrderInput): Promise<{ ok: 
 
   return { ok: true, orderId: order.id as string };
 }
+
+export async function submitReviewAction(input: {
+  productId: string;
+  rating: number;
+  comment: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok: false, error: "Chưa đăng nhập" };
+
+    const buyerName = user.user_metadata?.name ?? "Người dùng";
+
+    const { error } = await supabase.from("reviews").upsert(
+      {
+        product_id: input.productId,
+        buyer_id: user.id,
+        buyer_name: buyerName,
+        rating: input.rating,
+        comment: input.comment.trim(),
+      },
+      { onConflict: "product_id,buyer_id" }
+    );
+
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Lỗi hệ thống" };
+  }
+}

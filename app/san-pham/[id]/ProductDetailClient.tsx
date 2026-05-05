@@ -9,6 +9,7 @@ import { formatPrice, discountPercent } from '@/app/lib/data';
 import { useCart } from '@/app/context/CartContext';
 import { useProducts } from '@/app/context/ProductContext';
 import ProductCard from '@/app/components/ProductCard';
+import ProductReviews from '@/app/components/ProductReviews';
 
 export default function ProductDetailClient({
   product: initialProduct,
@@ -431,6 +432,11 @@ export default function ProductDetailClient({
               </a>
             </div>
           </div>
+        </div>
+
+        {/* Reviews */}
+        <div className="mb-10">
+          <ProductReviews productId={productId} />
         </div>
 
         {/* Related products */}
