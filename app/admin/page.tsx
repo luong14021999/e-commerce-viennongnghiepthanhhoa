@@ -162,26 +162,26 @@ export default function AdminPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* Section switcher */}
-        <div className="flex gap-2 mb-8 bg-white border border-gray-200 rounded-2xl p-1.5 w-fit">
+        <div className="flex gap-2 mb-8 overflow-x-auto pb-1 -mx-1 px-1">
           <button
             onClick={() => setSection("institute")}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-colors ${section === "institute" ? "bg-green-700 text-white shadow" : "text-gray-500 hover:text-gray-800"}`}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors flex-shrink-0 ${section === "institute" ? "bg-green-700 text-white shadow" : "bg-white border border-gray-200 text-gray-500 hover:text-gray-800"}`}
           >
-            🌾 Sản phẩm của Viện
+            🌾 <span className="hidden sm:inline">Sản phẩm của </span>Viện
             <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${section === "institute" ? "bg-white/20" : "bg-gray-100 text-gray-600"}`}>{instituteProducts.length}</span>
           </button>
           <button
-            onClick={() => setSection("businesses")}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-colors ${section === "businesses" ? "bg-blue-600 text-white shadow" : "text-gray-500 hover:text-gray-800"}`}
+            onClick={() => { setSection("businesses"); setSelectedBiz(null); }}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors flex-shrink-0 ${section === "businesses" ? "bg-blue-600 text-white shadow" : "bg-white border border-gray-200 text-gray-500 hover:text-gray-800"}`}
           >
-            🏪 Doanh nghiệp đối tác
+            🏪 <span className="hidden sm:inline">Doanh nghiệp </span>đối tác
             <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${section === "businesses" ? "bg-white/20" : "bg-gray-100 text-gray-600"}`}>{bizSellerIds.length}</span>
           </button>
           <button
             onClick={() => setSection("orders")}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-colors ${section === "orders" ? "bg-amber-600 text-white shadow" : "text-gray-500 hover:text-gray-800"}`}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors flex-shrink-0 ${section === "orders" ? "bg-amber-600 text-white shadow" : "bg-white border border-gray-200 text-gray-500 hover:text-gray-800"}`}
           >
-            📦 Đơn hàng khách
+            📦 Đơn hàng
           </button>
         </div>
 
@@ -237,9 +237,9 @@ export default function AdminPage() {
               <p className="text-gray-500 font-medium">Chưa có doanh nghiệp nào đăng sản phẩm</p>
             </div>
           ) : (
-            <div className="flex gap-6 items-start">
-              {/* ── Left sidebar: business list ── */}
-              <div className="w-72 flex-shrink-0 space-y-2">
+            <div className="md:flex md:gap-6 md:items-start">
+              {/* ── Business list (hidden on mobile when a biz is selected) ── */}
+              <div className={`md:w-72 md:flex-shrink-0 space-y-2 ${selectedBiz ? "hidden md:block" : "block"}`}>
                 {bizSellerIds.map((sid) => {
                   const prods = getSellerProducts(sid);
                   const sellerName = prods[0]?.sellerName ?? sid;
@@ -260,6 +260,9 @@ export default function AdminPage() {
                           <p className={`font-bold text-sm leading-snug truncate ${isActive ? "text-blue-800" : "text-gray-900"}`}>{sellerName}</p>
                           <p className="text-xs text-gray-500 mt-0.5">📦 {prods.length} sản phẩm</p>
                         </div>
+                        <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
+                        </svg>
                       </div>
                       <div className="flex gap-1.5 mt-2.5 flex-wrap">
                         {pending  > 0 && <span className="text-xs bg-amber-100 text-amber-700 font-semibold px-2 py-0.5 rounded-full">⏳ {pending}</span>}
@@ -271,8 +274,8 @@ export default function AdminPage() {
                 })}
               </div>
 
-              {/* ── Right panel: selected business products ── */}
-              <div className="flex-1 min-w-0">
+              {/* ── Right panel (full-width on mobile when selected) ── */}
+              <div className={`flex-1 min-w-0 ${selectedBiz ? "block" : "hidden md:block"}`}>
                 {!selectedBiz ? (
                   <div className="bg-white rounded-2xl border border-gray-200 py-20 text-center">
                     <div className="text-5xl mb-4">👈</div>
@@ -292,27 +295,37 @@ export default function AdminPage() {
                   return (
                     <div>
                       {/* Business header */}
-                      <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-4 flex items-center justify-between gap-3 flex-wrap">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-2xl">🏪</div>
-                          <div>
-                            <h2 className="font-bold text-gray-900 text-lg leading-tight">{sellerName}</h2>
-                            <p className="text-sm text-gray-500 mt-0.5">📦 {prods.length} sản phẩm</p>
+                      <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-4 flex items-center gap-3 flex-wrap">
+                        {/* Back button — mobile only */}
+                        <button
+                          onClick={() => setSelectedBiz(null)}
+                          className="md:hidden flex items-center gap-1 text-sm text-blue-600 font-semibold flex-shrink-0"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/>
+                          </svg>
+                          Quay lại
+                        </button>
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-xl flex-shrink-0">🏪</div>
+                          <div className="min-w-0">
+                            <h2 className="font-bold text-gray-900 text-base leading-tight truncate">{sellerName}</h2>
+                            <p className="text-xs text-gray-500 mt-0.5">📦 {prods.length} sản phẩm</p>
                           </div>
                         </div>
                         <Link
                           href={`/doanh-nghiep/${selectedBiz}`}
-                          className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-semibold px-3 py-1.5 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+                          className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-semibold px-3 py-1.5 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors flex-shrink-0"
                         >
                           Xem gian hàng →
                         </Link>
                       </div>
 
                       {/* Filter tabs */}
-                      <div className="flex gap-2 mb-4 flex-wrap">
+                      <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
                         {TAB_LABELS.map(({ key, label, color }) => (
                           <button key={key} onClick={() => setBizTab(key)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-colors ${bizTab === key ? `${color} text-white` : "bg-white border border-gray-200 text-gray-600 hover:border-gray-300"}`}>
+                            className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm font-semibold transition-colors flex-shrink-0 ${bizTab === key ? `${color} text-white` : "bg-white border border-gray-200 text-gray-600 hover:border-gray-300"}`}>
                             {label}
                             <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${bizTab === key ? "bg-white/20" : "bg-gray-100"}`}>{counts[key]}</span>
                           </button>
