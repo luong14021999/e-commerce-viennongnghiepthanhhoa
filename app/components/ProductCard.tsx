@@ -5,9 +5,13 @@ import Link from "next/link";
 import type { Product } from "@/app/lib/data";
 import { formatPrice, discountPercent } from "@/app/lib/data";
 import { useCart } from "@/app/context/CartContext";
+import { useReviewStats } from "@/app/context/ReviewStatsContext";
 
 export default function ProductCard({ product }: { product: Product }) {
   const { addToCart } = useCart();
+  const reviewStats = useReviewStats(product.id);
+  const rating = reviewStats ? reviewStats.avgRating : product.rating;
+  const reviewCount = reviewStats ? reviewStats.count : product.reviews;
   const isService = product.type === "service";
   const discount = isService ? 0 : discountPercent(product.originalPrice, product.price);
 
@@ -46,12 +50,12 @@ export default function ProductCard({ product }: { product: Product }) {
         <div className="flex items-center gap-1 mb-2">
           <div className="flex">
             {[1,2,3,4,5].map((s) => (
-              <svg key={s} className={`w-3 h-3 ${s <= Math.round(product.rating) ? "text-yellow-400" : "text-gray-200"}`} fill="currentColor" viewBox="0 0 24 24">
+              <svg key={s} className={`w-3 h-3 ${s <= Math.round(rating) ? "text-yellow-400" : "text-gray-200"}`} fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
               </svg>
             ))}
           </div>
-          <span className="text-xs text-gray-500">({product.reviews})</span>
+          <span className="text-xs text-gray-500">({reviewCount})</span>
           {isService ? (
             <span className="text-xs text-blue-500 ml-auto">{product.sold.toLocaleString()} lượt</span>
           ) : (
