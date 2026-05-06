@@ -102,7 +102,7 @@ export default function ProfilePage() {
 
     setSaving(false);
     setSuccess(true);
-    setTimeout(() => setSuccess(false), 3000);
+    setTimeout(() => router.push("/"), 1000);
   }
 
   return (
