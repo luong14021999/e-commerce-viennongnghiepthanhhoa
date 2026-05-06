@@ -36,13 +36,13 @@ export default function ProductCard({ product }: { product: Product }) {
       {/* Hover popup */}
       {hovered && (
         <div className="hidden md:block absolute -top-3 left-1/2 -translate-x-1/2 -translate-y-full z-50 w-68 pointer-events-none" style={{ width: "270px" }}>
-          <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-green-300">
+          <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-orange-300">
             {/* Gradient header */}
-            <div className="bg-gradient-to-r from-green-600 to-emerald-500 px-4 py-2.5 flex items-center gap-2">
+            <div className="bg-gradient-to-r from-orange-500 to-amber-400 px-4 py-2.5 flex items-center gap-2">
               <span className="text-lg">👋</span>
               <div>
                 <p className="text-white text-xs font-bold leading-tight">Xin chào quý khách!</p>
-                <p className="text-green-100 text-[10px]">Quý khách đang quan tâm mặt hàng này ạ?</p>
+                <p className="text-orange-100 text-[10px]">Quý khách đang quan tâm mặt hàng này ạ?</p>
               </div>
             </div>
             {/* Body */}
@@ -57,11 +57,11 @@ export default function ProductCard({ product }: { product: Product }) {
                   )}
                 </div>
               )}
-              <p className="text-[10px] text-green-600 font-semibold mt-2">👉 Nhấn vào để xem chi tiết</p>
+              <p className="text-[10px] text-orange-500 font-semibold mt-2">👉 Nhấn vào để xem chi tiết</p>
             </div>
           </div>
           {/* Arrow */}
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-green-300" />
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-orange-400" />
         </div>
       )}
       {/* Image area */}
