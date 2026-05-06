@@ -185,6 +185,26 @@ export async function createOrderAction(input: CreateOrderInput): Promise<{ ok: 
   return { ok: true, orderId: order.id as string };
 }
 
+export async function updateBuyerProfileAction(data: {
+  name: string;
+  email: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok: false, error: "Chưa đăng nhập" };
+    const admin = getAdminClient();
+    const { error } = await admin.from("profiles").update({
+      name: data.name,
+      email: data.email,
+    }).eq("id", user.id);
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Lỗi hệ thống" };
+  }
+}
+
 export async function submitReviewAction(input: {
   productId: string;
   rating: number;
