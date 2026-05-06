@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useAIChat } from "@/app/context/AIChatContext";
 
 type Message = {
   role: "user" | "assistant";
@@ -33,6 +34,7 @@ function RobotIcon({ className }: { className?: string }) {
 }
 
 export default function AIChatWidget() {
+  const { productContext } = useAIChat();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -40,7 +42,28 @@ export default function AIChatWidget() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const greetedProductRef = useRef<string | null>(null);
 
+  // Auto-open and greet when entering a product page
+  useEffect(() => {
+    if (!productContext) return;
+    if (greetedProductRef.current === productContext.name) return;
+    greetedProductRef.current = productContext.name;
+
+    const timer = setTimeout(() => {
+      setMessages([
+        {
+          role: "assistant",
+          content: `Xin chào! Tôi thấy bạn đang xem **${productContext.name}** (${productContext.price}).\n\nTôi có thể tư vấn về sản phẩm này, hướng dẫn đặt hàng, hoặc giải đáp bất kỳ thắc mắc nào. Bạn cần hỗ trợ gì không? 😊`,
+        },
+      ]);
+      setOpen(true);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [productContext]);
+
+  // Default greeting when opened manually
   useEffect(() => {
     if (open && messages.length === 0) {
       setMessages([
@@ -80,7 +103,7 @@ export default function AIChatWidget() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: nextMessages }),
+        body: JSON.stringify({ messages: nextMessages, productContext }),
         signal: ctrl.signal,
       });
 

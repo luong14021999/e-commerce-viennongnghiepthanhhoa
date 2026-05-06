@@ -9,6 +9,7 @@ import { CartProvider } from "./context/CartContext";
 import { AuthProvider } from "./context/AuthContext";
 import { ProductProvider } from "./context/ProductContext";
 import { ReviewStatsProvider } from "./context/ReviewStatsContext";
+import { AIChatProvider } from "./context/AIChatContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,11 +43,13 @@ export default function RootLayout({
           <ProductProvider>
             <ReviewStatsProvider>
               <CartProvider>
-                <Header />
-                <main className="flex-1">{children}</main>
-                <Footer />
-                <FloatingContact />
-                <AIChatWidget />
+                <AIChatProvider>
+                  <Header />
+                  <main className="flex-1">{children}</main>
+                  <Footer />
+                  <FloatingContact />
+                  <AIChatWidget />
+                </AIChatProvider>
               </CartProvider>
             </ReviewStatsProvider>
           </ProductProvider>
