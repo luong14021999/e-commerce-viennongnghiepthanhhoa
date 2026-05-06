@@ -35,13 +35,33 @@ export default function ProductCard({ product }: { product: Product }) {
     >
       {/* Hover popup */}
       {hovered && (
-        <div className="hidden md:block absolute -top-2 left-1/2 -translate-x-1/2 -translate-y-full z-50 w-64 bg-white border border-green-200 rounded-2xl shadow-xl p-3 pointer-events-none">
-          <p className="text-xs text-gray-700 leading-relaxed">
-            Xin chào quý khách! Quý khách đang quan tâm mặt hàng này ạ? 😊
-          </p>
-          <p className="text-xs text-gray-600 leading-relaxed mt-1.5">{hoverMessage}</p>
+        <div className="hidden md:block absolute -top-3 left-1/2 -translate-x-1/2 -translate-y-full z-50 w-68 pointer-events-none" style={{ width: "270px" }}>
+          <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-green-300">
+            {/* Gradient header */}
+            <div className="bg-gradient-to-r from-green-600 to-emerald-500 px-4 py-2.5 flex items-center gap-2">
+              <span className="text-lg">👋</span>
+              <div>
+                <p className="text-white text-xs font-bold leading-tight">Xin chào quý khách!</p>
+                <p className="text-green-100 text-[10px]">Quý khách đang quan tâm mặt hàng này ạ?</p>
+              </div>
+            </div>
+            {/* Body */}
+            <div className="bg-white px-4 py-3">
+              <p className="text-xs font-semibold text-gray-800 mb-1 line-clamp-1">🌿 {product.name}</p>
+              <p className="text-xs text-gray-500 leading-relaxed">{hoverMessage}</p>
+              {!isService && (
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-sm font-bold text-red-500">{formatPrice(product.price)}</span>
+                  {discount > 0 && (
+                    <span className="text-[10px] bg-red-100 text-red-500 font-bold px-1.5 py-0.5 rounded-full">-{discount}%</span>
+                  )}
+                </div>
+              )}
+              <p className="text-[10px] text-green-600 font-semibold mt-2">👉 Nhấn vào để xem chi tiết</p>
+            </div>
+          </div>
           {/* Arrow */}
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-green-200" />
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-green-300" />
         </div>
       )}
       {/* Image area */}
