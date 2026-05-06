@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
+import twilio from "twilio";
 
 function getAdminClient() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -265,5 +266,77 @@ export async function submitReviewAction(input: {
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Lỗi hệ thống" };
+  }
+}
+
+export async function sendOtpAction(phone: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const admin = getAdminClient();
+
+    // Check if phone already registered
+    const { data: existing } = await admin
+      .from("profiles")
+      .select("id")
+      .eq("phone", phone)
+      .maybeSingle();
+    if (existing) return { ok: false, error: "Số điện thoại đã được đăng ký" };
+
+    // Invalidate old OTPs for this phone
+    await admin.from("otp_verifications").delete().eq("phone", phone);
+
+    // Generate 6-digit OTP
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    const expiresAt = new Date(Date.now() + 60 * 1000).toISOString();
+
+    const { error: insertErr } = await admin.from("otp_verifications").insert({
+      phone,
+      otp,
+      expires_at: expiresAt,
+      used: false,
+    });
+    if (insertErr) return { ok: false, error: insertErr.message };
+
+    // Send via Twilio
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    const fromPhone = process.env.TWILIO_PHONE_NUMBER;
+    if (!accountSid || !authToken || !fromPhone) {
+      return { ok: false, error: "Cấu hình SMS chưa đầy đủ" };
+    }
+
+    const client = twilio(accountSid, authToken);
+    const e164 = "+84" + phone.slice(1);
+    await client.messages.create({
+      body: `[Vien Nong Nghiep Thanh Hoa] Ma xac thuc cua ban la: ${otp}. Co hieu luc trong 1 phut.`,
+      from: fromPhone,
+      to: e164,
+    });
+
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Lỗi gửi OTP" };
+  }
+}
+
+export async function verifyOtpAction(phone: string, otp: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const admin = getAdminClient();
+
+    const { data } = await admin
+      .from("otp_verifications")
+      .select("id, expires_at, used")
+      .eq("phone", phone)
+      .eq("otp", otp)
+      .maybeSingle();
+
+    if (!data) return { ok: false, error: "Mã OTP không đúng" };
+    if (data.used) return { ok: false, error: "Mã OTP đã được sử dụng" };
+    if (new Date(data.expires_at) < new Date()) return { ok: false, error: "Mã OTP đã hết hạn" };
+
+    await admin.from("otp_verifications").update({ used: true }).eq("id", data.id);
+
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Lỗi xác thực OTP" };
   }
 }
