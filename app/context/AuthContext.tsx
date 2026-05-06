@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { registerUserAction, insertBusinessProfileAction, updateBusinessProfileAction, updateBuyerProfileAction } from '@/lib/actions';
+import { registerUserAction, insertBusinessProfileAction, updateBusinessProfileAction, updateBuyerProfileAction, updatePhoneAction } from '@/lib/actions';
 
 export type UserRole = 'buyer' | 'business' | 'admin';
 
@@ -53,6 +53,7 @@ type AuthContextValue = {
   updateBuyerProfile: (
     data: { name: string; email: string },
   ) => Promise<{ ok: boolean; error?: string }>;
+  updatePhone: (newPhone: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => void;
   isLoading: boolean;
 };
@@ -172,6 +173,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { ok: true };
   }
 
+  async function updatePhone(newPhone: string) {
+    const result = await updatePhoneAction(newPhone);
+    if (result.ok) {
+      const supabase = createClient();
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        const profile = await fetchProfile(authUser.id);
+        setUser(profile);
+      }
+    }
+    return result;
+  }
+
   async function updateBuyerProfile(data: { name: string; email: string }) {
     const result = await updateBuyerProfileAction(data);
     if (result.ok) {
@@ -211,6 +225,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         registerBuyer,
         registerBusiness,
+        updatePhone,
         updateBuyerProfile,
         updateBusinessProfile,
         logout,

@@ -11,7 +11,7 @@ const BUSINESS_CATEGORIES = [
 ];
 
 export default function ProfilePage() {
-  const { user, isLoading, updateBuyerProfile, updateBusinessProfile } = useAuth();
+  const { user, isLoading, updateBuyerProfile, updateBusinessProfile, updatePhone } = useAuth();
   const router = useRouter();
 
   const [name, setName] = useState("");
@@ -21,10 +21,12 @@ export default function ProfilePage() {
   const [bizAddress, setBizAddress] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
+  const [phone, setPhone] = useState("");
 
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
 
   useEffect(() => {
     if (!isLoading && !user) router.replace("/dang-nhap?redirect=/tai-khoan");
@@ -34,6 +36,7 @@ export default function ProfilePage() {
     if (!user) return;
     setName(user.name);
     setEmail(user.email ?? "");
+    setPhone(user.phone ?? "");
     if (user.business) {
       setBizName(user.business.businessName ?? "");
       setTaxCode(user.business.taxCode ?? "");
@@ -45,15 +48,30 @@ export default function ProfilePage() {
 
   if (isLoading || !user) return null;
 
-  async function handleSave(e: React.FormEvent) {
+  const isBusiness = user.role === "business";
+  const focusRing = isBusiness ? "focus:ring-blue-500" : "focus:ring-green-500";
+  const btnBg = isBusiness ? "bg-blue-600 hover:bg-blue-700" : "bg-green-700 hover:bg-green-600";
+
+  async function handleSave(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
-    setSaving(true);
+    if (!user) return;
     setError("");
+    setPhoneError("");
     setSuccess(false);
 
-    let result: { ok: boolean; error?: string };
-    if (user!.role === "business") {
-      result = await updateBusinessProfile({
+    // Validate phone
+    const cleanedPhone = phone.trim().replace(/\s/g, "");
+    if (!/^0\d{9}$/.test(cleanedPhone)) {
+      setPhoneError("Số điện thoại không hợp lệ (phải bắt đầu bằng 0, đủ 10 số)");
+      return;
+    }
+
+    setSaving(true);
+
+    // Update profile info
+    let profileResult: { ok: boolean; error?: string };
+    if (isBusiness) {
+      profileResult = await updateBusinessProfile({
         businessName: bizName,
         taxCode,
         businessAddress: bizAddress,
@@ -63,20 +81,29 @@ export default function ProfilePage() {
         contactEmail: email,
       });
     } else {
-      result = await updateBuyerProfile({ name, email });
+      profileResult = await updateBuyerProfile({ name, email });
+    }
+
+    if (!profileResult.ok) {
+      setSaving(false);
+      setError(profileResult.error ?? "Lỗi hệ thống");
+      return;
+    }
+
+    // Update phone if changed
+    if (cleanedPhone !== user.phone) {
+      const phoneResult = await updatePhone(cleanedPhone);
+      if (!phoneResult.ok) {
+        setSaving(false);
+        setPhoneError(phoneResult.error ?? "Lỗi hệ thống");
+        return;
+      }
     }
 
     setSaving(false);
-    if (result.ok) {
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
-    } else {
-      setError(result.error ?? "Lỗi hệ thống");
-    }
+    setSuccess(true);
+    setTimeout(() => setSuccess(false), 3000);
   }
-
-  const isBuyer = user.role === "buyer";
-  const isBusiness = user.role === "business";
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -98,40 +125,33 @@ export default function ProfilePage() {
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
         <form onSubmit={handleSave} className="space-y-5">
 
-          {/* Read-only info */}
+          {/* Personal info */}
           <div className="bg-white rounded-2xl border border-gray-200 p-5">
-            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">Thông tin tài khoản</h2>
+            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">Thông tin cá nhân</h2>
             <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1">Số điện thoại (không thể thay đổi)</label>
-                <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-500">
-                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                  </svg>
-                  {user.phone}
-                </div>
-              </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">
                   {isBusiness ? "Tên người liên hệ" : "Họ và tên"} <span className="text-red-500">*</span>
                 </label>
-                <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder="Nhập họ tên..."
-                />
+                <input value={name} onChange={(e) => setName(e.target.value)} required
+                  className={`w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ${focusRing}`}
+                  placeholder="Nhập họ tên..." />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">Email</label>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                  className={`w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ${focusRing}`}
+                  placeholder="example@email.com" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Số điện thoại</label>
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder="example@email.com"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => { setPhone(e.target.value); setPhoneError(""); }}
+                  className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ${focusRing} ${phoneError ? "border-red-400" : "border-gray-200"}`}
                 />
+                {phoneError && <p className="text-red-500 text-xs mt-1.5">{phoneError}</p>}
               </div>
             </div>
           </div>
@@ -143,56 +163,36 @@ export default function ProfilePage() {
               <div className="space-y-3">
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1">Tên doanh nghiệp <span className="text-red-500">*</span></label>
-                  <input
-                    value={bizName}
-                    onChange={(e) => setBizName(e.target.value)}
-                    required
+                  <input value={bizName} onChange={(e) => setBizName(e.target.value)} required
                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Tên công ty / hộ kinh doanh..."
-                  />
+                    placeholder="Tên công ty / hộ kinh doanh..." />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1">Mã số thuế</label>
-                  <input
-                    value={taxCode}
-                    onChange={(e) => setTaxCode(e.target.value)}
+                  <input value={taxCode} onChange={(e) => setTaxCode(e.target.value)}
                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="0123456789"
-                  />
+                    placeholder="0123456789" />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1">Địa chỉ kinh doanh</label>
-                  <input
-                    value={bizAddress}
-                    onChange={(e) => setBizAddress(e.target.value)}
+                  <input value={bizAddress} onChange={(e) => setBizAddress(e.target.value)}
                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Số nhà, đường, xã/phường, huyện/TP..."
-                  />
+                    placeholder="Số nhà, đường, xã/phường, huyện/TP..." />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1">Lĩnh vực kinh doanh</label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                  >
+                  <select value={category} onChange={(e) => setCategory(e.target.value)}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                     <option value="">-- Chọn lĩnh vực --</option>
-                    {BUSINESS_CATEGORIES.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
+                    {BUSINESS_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1">Mô tả doanh nghiệp</label>
-                  <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={3}
+                  <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3}
                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                    placeholder="Giới thiệu ngắn về doanh nghiệp..."
-                  />
+                    placeholder="Giới thiệu ngắn về doanh nghiệp..." />
                 </div>
-
                 {user.business?.verified && (
                   <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-2.5 text-sm text-green-700">
                     <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
@@ -205,10 +205,7 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {/* Error / Success */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">{error}</div>
-          )}
+          {error && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">{error}</div>}
           {success && (
             <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-700 flex items-center gap-2">
               <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
@@ -217,14 +214,8 @@ export default function ProfilePage() {
               Cập nhật thông tin thành công!
             </div>
           )}
-
-          <button
-            type="submit"
-            disabled={saving}
-            className={`w-full font-bold py-3.5 rounded-xl transition-colors text-white disabled:bg-gray-300 ${
-              isBusiness ? "bg-blue-600 hover:bg-blue-700" : "bg-green-700 hover:bg-green-600"
-            }`}
-          >
+          <button type="submit" disabled={saving}
+            className={`w-full font-bold py-3.5 rounded-xl transition-colors text-white disabled:bg-gray-300 ${btnBg}`}>
             {saving ? "Đang lưu..." : "Lưu thay đổi"}
           </button>
         </form>

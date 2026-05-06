@@ -185,6 +185,39 @@ export async function createOrderAction(input: CreateOrderInput): Promise<{ ok: 
   return { ok: true, orderId: order.id as string };
 }
 
+export async function updatePhoneAction(newPhone: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok: false, error: "Chưa đăng nhập" };
+
+    const admin = getAdminClient();
+
+    // Check duplicate
+    const { data: existing } = await admin
+      .from("profiles")
+      .select("id")
+      .eq("phone", newPhone)
+      .neq("id", user.id)
+      .maybeSingle();
+    if (existing) return { ok: false, error: "Số điện thoại đã được sử dụng bởi tài khoản khác" };
+
+    // Update Supabase Auth email (phone used as login)
+    const { error: authErr } = await admin.auth.admin.updateUserById(user.id, {
+      email: `${newPhone}@vnn.vn`,
+    });
+    if (authErr) return { ok: false, error: authErr.message };
+
+    // Update profiles table
+    const { error: profileErr } = await admin.from("profiles").update({ phone: newPhone }).eq("id", user.id);
+    if (profileErr) return { ok: false, error: profileErr.message };
+
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Lỗi hệ thống" };
+  }
+}
+
 export async function updateBuyerProfileAction(data: {
   name: string;
   email: string;
