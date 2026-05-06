@@ -310,6 +310,7 @@ export async function sendOtpAction(phone: string): Promise<{ ok: boolean; error
         to: [phone],
         content: `[Vien Nong Nghiep Thanh Hoa] Ma xac thuc: ${otp}. Hieu luc 1 phut.`,
         type: 8,
+        sender: process.env.SPEEDSMS_SENDER ?? "SpeedSMS",
       }),
     });
 
