@@ -2,7 +2,6 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
-import twilio from "twilio";
 
 function getAdminClient() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -296,21 +295,25 @@ export async function sendOtpAction(phone: string): Promise<{ ok: boolean; error
     });
     if (insertErr) return { ok: false, error: insertErr.message };
 
-    // Send via Twilio
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-    const fromPhone = process.env.TWILIO_PHONE_NUMBER;
-    if (!accountSid || !authToken || !fromPhone) {
-      return { ok: false, error: "Cấu hình SMS chưa đầy đủ" };
-    }
+    // Send via SpeedSMS
+    const accessToken = process.env.SPEEDSMS_ACCESS_TOKEN;
+    if (!accessToken) return { ok: false, error: "Cấu hình SMS chưa đầy đủ" };
 
-    const client = twilio(accountSid, authToken);
-    const e164 = "+84" + phone.slice(1);
-    await client.messages.create({
-      body: `[Vien Nong Nghiep Thanh Hoa] Ma xac thuc cua ban la: ${otp}. Co hieu luc trong 1 phut.`,
-      from: fromPhone,
-      to: e164,
+    const basicAuth = Buffer.from(`${accessToken}:x`).toString("base64");
+    const smsRes = await fetch("https://api.speedsms.vn/index.php/sms/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Basic ${basicAuth}`,
+      },
+      body: JSON.stringify({
+        to: [phone],
+        content: `[Vien Nong Nghiep Thanh Hoa] Ma xac thuc cua ban la: ${otp}. Co hieu luc trong 1 phut.`,
+        type: 2,
+        sender: "SpeedSMS",
+      }),
     });
+    if (!smsRes.ok) return { ok: false, error: "Gửi SMS thất bại" };
 
     return { ok: true };
   } catch (e) {
