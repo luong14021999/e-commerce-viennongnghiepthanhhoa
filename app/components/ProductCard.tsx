@@ -35,7 +35,7 @@ export default function ProductCard({ product }: { product: Product }) {
     >
       {/* Hover popup */}
       {hovered && (
-        <div className="hidden md:block absolute -top-3 left-1/2 -translate-x-1/2 -translate-y-full z-50 w-68 pointer-events-none" style={{ width: "270px" }}>
+        <div className="hidden md:block absolute top-8 left-1/2 -translate-x-1/2 -translate-y-full z-50 pointer-events-none" style={{ width: "270px" }}>
           <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-orange-300">
             {/* Gradient header */}
             <div className="bg-gradient-to-r from-orange-500 to-amber-400 px-4 py-2.5 flex items-center gap-2">
