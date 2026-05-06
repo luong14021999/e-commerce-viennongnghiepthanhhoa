@@ -1,14 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
-import { sendOtpAction, verifyOtpAction } from '@/lib/actions';
 
 type Role = 'buyer' | 'business';
-type Step = 'form' | 'otp';
 
 const BUSINESS_CATEGORIES = [
   'Giống cây trồng', 'Phân bón & Dinh dưỡng', 'Thuốc BVTV',
@@ -18,24 +16,7 @@ const BUSINESS_CATEGORIES = [
 export default function RegisterPage() {
   const { registerBuyer, registerBusiness, login, user, isLoading } = useAuth();
   const router = useRouter();
-
   const [role, setRole] = useState<Role>('buyer');
-  const [step, setStep] = useState<Step>('form');
-
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const [form, setForm] = useState({
-    name: '', phone: '', email: '', password: '', confirm: '',
-    businessName: '', taxCode: '', businessAddress: '', category: '', description: '',
-  });
-
-  // OTP state
-  const [otp, setOtp] = useState('');
-  const [otpError, setOtpError] = useState('');
-  const [countdown, setCountdown] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!isLoading && user) {
@@ -45,196 +26,63 @@ export default function RegisterPage() {
     }
   }, [user, isLoading, router]);
 
-  useEffect(() => {
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, []);
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [form, setForm] = useState({
+    name: '', phone: '', email: '', password: '', confirm: '',
+    businessName: '', taxCode: '', businessAddress: '', category: '', description: '',
+  });
 
   function setField(field: string, value: string) {
     setForm(f => ({ ...f, [field]: value }));
   }
 
-  function startCountdown() {
-    setCountdown(60);
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setCountdown(c => {
-        if (c <= 1) { clearInterval(timerRef.current!); return 0; }
-        return c - 1;
-      });
-    }, 1000);
-  }
-
-  function validateForm() {
-    const cleaned = form.phone.trim().replace(/\s/g, '');
-    if (!form.name.trim()) { setError('Vui lòng nhập họ và tên'); return false; }
-    if (!/^0\d{9}$/.test(cleaned)) { setError('Số điện thoại không hợp lệ (phải bắt đầu bằng 0, đủ 10 số)'); return false; }
-    if (form.password.length < 6) { setError('Mật khẩu phải có ít nhất 6 ký tự'); return false; }
-    if (form.password !== form.confirm) { setError('Mật khẩu xác nhận không khớp'); return false; }
-    if (role === 'business' && (!form.businessName || !form.taxCode || !form.businessAddress || !form.category)) {
-      setError('Vui lòng điền đầy đủ thông tin doanh nghiệp'); return false;
-    }
-    return true;
-  }
-
-  async function handleSendOtp(e: React.SyntheticEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     setError('');
-    if (!validateForm()) return;
-
-    setLoading(true);
-    const cleaned = form.phone.trim().replace(/\s/g, '');
-    const result = await sendOtpAction(cleaned);
-    setLoading(false);
-
-    if (!result.ok) { setError(result.error ?? 'Lỗi gửi OTP'); return; }
-
-    setStep('otp');
-    setOtp('');
-    setOtpError('');
-    startCountdown();
-  }
-
-  async function handleResendOtp() {
-    if (countdown > 0) return;
-    setOtpError('');
-    setLoading(true);
-    const cleaned = form.phone.trim().replace(/\s/g, '');
-    const result = await sendOtpAction(cleaned);
-    setLoading(false);
-    if (!result.ok) { setOtpError(result.error ?? 'Lỗi gửi OTP'); return; }
-    startCountdown();
-  }
-
-  async function handleVerifyAndRegister(e: React.SyntheticEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setOtpError('');
-    if (otp.length !== 6) { setOtpError('Vui lòng nhập đủ 6 số'); return; }
-
-    setLoading(true);
-    const cleaned = form.phone.trim().replace(/\s/g, '');
-
-    // Verify OTP first
-    const verifyResult = await verifyOtpAction(cleaned, otp);
-    if (!verifyResult.ok) {
-      setLoading(false);
-      setOtpError(verifyResult.error ?? 'Mã OTP không hợp lệ');
+    if (!form.name || !form.phone || !form.password) {
+      setError('Vui lòng nhập đầy đủ các trường bắt buộc');
       return;
     }
-
-    // Create account
-    const regResult = role === 'buyer'
-      ? await registerBuyer({ name: form.name, phone: cleaned, email: form.email, password: form.password })
+    if (form.password !== form.confirm) {
+      setError('Mật khẩu xác nhận không khớp');
+      return;
+    }
+    if (form.password.length < 6) {
+      setError('Mật khẩu phải có ít nhất 6 ký tự');
+      return;
+    }
+    if (role === 'business' && (!form.businessName || !form.taxCode || !form.businessAddress || !form.category)) {
+      setError('Vui lòng điền đầy đủ thông tin doanh nghiệp');
+      return;
+    }
+    setLoading(true);
+    const result = role === 'buyer'
+      ? await registerBuyer({ name: form.name, phone: form.phone, email: form.email, password: form.password })
       : await registerBusiness({
-          name: form.name, phone: cleaned, email: form.email, password: form.password,
+          name: form.name, phone: form.phone, email: form.email, password: form.password,
           businessName: form.businessName, taxCode: form.taxCode,
           businessAddress: form.businessAddress, category: form.category, description: form.description,
         });
 
-    if (!regResult.ok) {
+    if (!result.ok) {
       setLoading(false);
-      setOtpError(regResult.error ?? 'Đăng ký thất bại');
+      setError(result.error ?? 'Đăng ký thất bại');
       return;
     }
 
-    await login(cleaned, form.password);
+    const loginResult = await login(form.phone, form.password);
     setLoading(false);
+    if (loginResult.ok) {
+      setSuccess('Đăng ký thành công! Đang chuyển trang...');
+      return;
+    }
+    setSuccess('Đăng ký thành công! Vui lòng đăng nhập.');
+    router.push('/dang-nhap');
   }
 
-  if (isLoading) return null;
-
-  // ── OTP step ──
-  if (step === 'otp') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
-        <div className="w-full max-w-sm">
-          <div className="text-center mb-8">
-            <Link href="/" className="inline-flex items-center gap-3">
-              <Image src="/thanh_hoa_agriculture_logo.png" alt="Logo" width={72} height={72} className="object-contain" />
-              <div className="text-left">
-                <div className="text-xl font-extrabold text-green-800 uppercase leading-tight">Viện Nông Nghiệp</div>
-                <div className="text-base font-bold text-green-600">Thanh Hóa</div>
-              </div>
-            </Link>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-            <div className="text-center mb-6">
-              <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <svg className="w-7 h-7 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                </svg>
-              </div>
-              <h2 className="text-xl font-bold text-gray-900">Xác thực số điện thoại</h2>
-              <p className="text-sm text-gray-500 mt-1">
-                Mã OTP đã được gửi đến <span className="font-semibold text-gray-700">{form.phone}</span>
-              </p>
-            </div>
-
-            <form onSubmit={handleVerifyAndRegister} className="space-y-4">
-              {otpError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl flex items-center gap-2">
-                  <span>⚠️</span> {otpError}
-                </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nhập mã OTP (6 số)</label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={otp}
-                  onChange={e => { setOtp(e.target.value.replace(/\D/g, '')); setOtpError(''); }}
-                  placeholder="_ _ _ _ _ _"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-center text-2xl font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-green-500"
-                  autoFocus
-                />
-              </div>
-
-              {/* Countdown */}
-              <div className="text-center text-sm">
-                {countdown > 0 ? (
-                  <span className="text-gray-500">
-                    Mã hết hạn sau{' '}
-                    <span className={`font-bold ${countdown <= 10 ? 'text-red-500' : 'text-green-700'}`}>
-                      {countdown}s
-                    </span>
-                  </span>
-                ) : (
-                  <span className="text-gray-500">Không nhận được mã?{' '}
-                    <button type="button" onClick={handleResendOtp} disabled={loading}
-                      className="text-green-700 font-semibold hover:underline disabled:opacity-50">
-                      Gửi lại
-                    </button>
-                  </span>
-                )}
-              </div>
-
-              <button type="submit" disabled={loading || otp.length !== 6}
-                className="w-full bg-green-700 hover:bg-green-600 disabled:bg-gray-300 text-white font-bold py-3 rounded-xl transition-colors text-sm flex items-center justify-center gap-2">
-                {loading ? (
-                  <>
-                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                    </svg>
-                    Đang xác thực...
-                  </>
-                ) : 'Xác nhận & Đăng ký'}
-              </button>
-
-              <button type="button" onClick={() => { setStep('form'); setError(''); }}
-                className="w-full text-sm text-gray-500 hover:text-gray-700 py-1">
-                ← Quay lại chỉnh sửa thông tin
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Form step ──
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
       <div className="w-full max-w-lg">
@@ -275,7 +123,13 @@ export default function RegisterPage() {
         )}
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-          <form onSubmit={handleSendOtp} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {success && (
+              <div className="bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-xl flex items-center gap-2">
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
+                {success}
+              </div>
+            )}
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl flex items-center gap-2">
                 <span>⚠️</span> {error}
@@ -338,7 +192,6 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Business fields */}
             {role === 'business' && (
               <>
                 <hr className="border-gray-200" />
@@ -396,9 +249,9 @@ export default function RegisterPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                   </svg>
-                  Đang gửi mã...
+                  Đang đăng ký...
                 </>
-              ) : 'Gửi mã xác thực OTP'}
+              ) : role === 'business' ? 'Đăng ký tài khoản doanh nghiệp' : 'Đăng ký tài khoản'}
             </button>
           </form>
 
