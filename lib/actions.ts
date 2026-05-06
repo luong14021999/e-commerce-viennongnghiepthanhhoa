@@ -308,12 +308,16 @@ export async function sendOtpAction(phone: string): Promise<{ ok: boolean; error
       },
       body: JSON.stringify({
         to: [phone],
-        content: `[Vien Nong Nghiep Thanh Hoa] Ma xac thuc cua ban la: ${otp}. Co hieu luc trong 1 phut.`,
-        type: 2,
-        sender: "SpeedSMS",
+        content: `[Vien Nong Nghiep Thanh Hoa] Ma xac thuc: ${otp}. Hieu luc 1 phut.`,
+        type: 8,
       }),
     });
-    if (!smsRes.ok) return { ok: false, error: "Gửi SMS thất bại" };
+
+    const smsJson = await smsRes.json() as { status?: string; code?: string; message?: string };
+    console.log("[SpeedSMS response]", JSON.stringify(smsJson));
+    if (smsJson.status === "error") {
+      return { ok: false, error: `Gửi SMS thất bại: ${smsJson.message ?? smsJson.code}` };
+    }
 
     return { ok: true };
   } catch (e) {
