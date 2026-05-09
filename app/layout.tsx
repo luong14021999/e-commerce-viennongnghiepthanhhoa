@@ -4,12 +4,10 @@ import "./globals.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import FloatingContact from "./components/FloatingContact";
-import AIChatWidget from "./components/AIChatWidget";
 import { CartProvider } from "./context/CartContext";
 import { AuthProvider } from "./context/AuthContext";
 import { ProductProvider } from "./context/ProductContext";
 import { ReviewStatsProvider } from "./context/ReviewStatsContext";
-import { AIChatProvider } from "./context/AIChatContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,13 +41,10 @@ export default function RootLayout({
           <ProductProvider>
             <ReviewStatsProvider>
               <CartProvider>
-                <AIChatProvider>
-                  <Header />
-                  <main className="flex-1">{children}</main>
-                  <Footer />
-                  <FloatingContact />
-                  <AIChatWidget />
-                </AIChatProvider>
+                <Header />
+                <main className="flex-1">{children}</main>
+                <Footer />
+                <FloatingContact />
               </CartProvider>
             </ReviewStatsProvider>
           </ProductProvider>

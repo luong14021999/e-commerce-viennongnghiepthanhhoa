@@ -2,68 +2,21 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
 import type { Product } from "@/app/lib/data";
 import { formatPrice, discountPercent } from "@/app/lib/data";
 import { useCart } from "@/app/context/CartContext";
 import { useReviewStats } from "@/app/context/ReviewStatsContext";
 
-
-function getHoverMessage(product: Product, discount: number): string {
-  if (discount >= 20) return `Sản phẩm đang giảm tới ${discount}%! Đừng bỏ lỡ ưu đãi hấp dẫn này nhé 🔥`;
-  if (product.sold >= 100) return `Đã có ${product.sold.toLocaleString()} khách hàng tin dùng sản phẩm này ⭐`;
-  if (product.tag) return `Sản phẩm ${product.tag} — chất lượng được kiểm định bởi Viện Nông Nghiệp 🌿`;
-  return `Sản phẩm chất lượng cao từ Viện Nông Nghiệp Thanh Hóa. Bạn có muốn xem thêm không? 😊`;
-}
-
 export default function ProductCard({ product }: { product: Product }) {
   const { addToCart } = useCart();
-  const [hovered, setHovered] = useState(false);
   const reviewStats = useReviewStats(product.id);
   const rating = reviewStats ? reviewStats.avgRating : product.rating;
   const reviewCount = reviewStats ? reviewStats.count : product.reviews;
   const isService = product.type === "service";
   const discount = isService ? 0 : discountPercent(product.originalPrice, product.price);
 
-  const hoverMessage = getHoverMessage(product, discount);
-
   return (
-    <div
-      className="relative bg-white rounded-xl border border-gray-200 overflow-visible hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col group"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      {/* Hover popup */}
-      {hovered && (
-        <div className="hidden md:block absolute top-8 left-1/2 -translate-x-1/2 -translate-y-full z-50 pointer-events-none" style={{ width: "270px" }}>
-          <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-orange-300">
-            {/* Gradient header */}
-            <div className="bg-gradient-to-r from-orange-500 to-amber-400 px-4 py-2.5 flex items-center gap-2">
-              <span className="text-lg">👋</span>
-              <div>
-                <p className="text-white text-xs font-bold leading-tight">Xin chào quý khách!</p>
-                <p className="text-orange-100 text-[10px]">Quý khách đang quan tâm mặt hàng này ạ?</p>
-              </div>
-            </div>
-            {/* Body */}
-            <div className="bg-white px-4 py-3">
-              <p className="text-xs font-semibold text-gray-800 mb-1 line-clamp-1">🌿 {product.name}</p>
-              <p className="text-xs text-gray-500 leading-relaxed">{hoverMessage}</p>
-              {!isService && (
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="text-sm font-bold text-red-500">{formatPrice(product.price)}</span>
-                  {discount > 0 && (
-                    <span className="text-[10px] bg-red-100 text-red-500 font-bold px-1.5 py-0.5 rounded-full">-{discount}%</span>
-                  )}
-                </div>
-              )}
-              <p className="text-[10px] text-orange-500 font-semibold mt-2">👉 Nhấn vào để xem chi tiết</p>
-            </div>
-          </div>
-          {/* Arrow */}
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-orange-400" />
-        </div>
-      )}
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col group">
       {/* Image area */}
       <Link href={`/san-pham/${product.id}`} className={`${product.bg} flex items-center justify-center h-40 relative overflow-hidden`}>
         {(product.images?.[0] ?? product.imageUrl) ? (

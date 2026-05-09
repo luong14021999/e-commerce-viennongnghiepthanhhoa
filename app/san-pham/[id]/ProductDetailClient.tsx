@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { notFound } from 'next/navigation';
 import type { Product } from '@/app/lib/data';
@@ -11,7 +11,6 @@ import { useProducts } from '@/app/context/ProductContext';
 import ProductCard from '@/app/components/ProductCard';
 import ProductReviews from '@/app/components/ProductReviews';
 import { useReviewStats } from '@/app/context/ReviewStatsContext';
-import { useAIChat } from '@/app/context/AIChatContext';
 
 export default function ProductDetailClient({
   product: initialProduct,
@@ -24,7 +23,6 @@ export default function ProductDetailClient({
 }) {
   const { addToCart } = useCart();
   const { sellerProducts, isLoaded } = useProducts();
-  const { setProductContext } = useAIChat();
   const router = useRouter();
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
@@ -34,17 +32,6 @@ export default function ProductDetailClient({
   // Fall back to seller products from context if not in base catalog
   const product =
     initialProduct ?? sellerProducts.find(p => p.id === productId) ?? null;
-
-  useEffect(() => {
-    if (!product) return;
-    setProductContext({
-      name: product.name,
-      price: formatPrice(product.price),
-      category: product.category,
-    });
-    return () => setProductContext(null);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product?.id]);
 
   const related = initialProduct
     ? initialRelated
