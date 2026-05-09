@@ -8,9 +8,9 @@ import { formatPrice, discountPercent } from "@/app/lib/data";
 import { useCart } from "@/app/context/CartContext";
 import { useReviewStats } from "@/app/context/ReviewStatsContext";
 
-const POPUP_CONTENT = `Chúng tôi biết rằng Quý Anh, Chị đang quan tâm đến sản phẩm của VIỆN NÔNG NGHIỆP THANH HÓA. Chúng tôi rất vui mừng được phục vụ Quý Anh/Chị. Hiện nay, Viện Nông nghiệp Thanh Hóa đang có rất nhiều sản phẩm nông nghiệp, vừa phong phú đa dạng về chủng loại, kiểu dáng, vừa cam kết đảm bảo chất lượng, nhất là AN TOÀN THỰC PHẨM, bởi Viện chúng tôi có hệ thống khép kín từ khâu nghiên cứu, xây dựng mô hình, chọn tạo giống, liên kết tổ chức sản xuất theo chuỗi, chế biến, đóng gói. Đặc biệt là Viện có Phòng Phân tích, kiểm nghiệm đạt tiêu chuẩn ISO/IEC.
+const POPUP_CONTENT = `Quý Anh/Chị đang quan tâm đến sản phẩm của VIỆN NÔNG NGHIỆP THANH HÓA — nơi cam kết AN TOÀN THỰC PHẨM với hệ thống khép kín từ nghiên cứu, chọn tạo giống đến chế biến, đóng gói đạt chuẩn ISO/IEC.
 
-Quý Anh/Chị muốn mua SẢN PHẨM, vui lòng vào gian hàng, giỏ hàng bên dưới đăng ký mua. Mỗi sản phẩm anh chị mua là đóng góp một phần công sức quý báu của mình trong tiêu thụ nông sản cho người Nông dân, và Quý Anh/Chị đang là nhà tiêu dùng thông thái lựa chọn sản phẩm nông nghiệp chất lượng, an toàn!`;
+Vui lòng vào giỏ hàng để đặt mua. Mỗi sản phẩm Quý Anh/Chị chọn là đóng góp thiết thực cho người Nông dân Thanh Hóa! 🌿`;
 
 export default function ProductCard({ product }: { product: Product }) {
   const { addToCart } = useCart();
