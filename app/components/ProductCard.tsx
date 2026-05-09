@@ -2,13 +2,19 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import type { Product } from "@/app/lib/data";
 import { formatPrice, discountPercent } from "@/app/lib/data";
 import { useCart } from "@/app/context/CartContext";
 import { useReviewStats } from "@/app/context/ReviewStatsContext";
 
+const POPUP_CONTENT = `Chúng tôi biết rằng Quý Anh, Chị đang quan tâm đến sản phẩm của VIỆN NÔNG NGHIỆP THANH HÓA. Chúng tôi rất vui mừng được phục vụ Quý Anh/Chị. Hiện nay, Viện Nông nghiệp Thanh Hóa đang có rất nhiều sản phẩm nông nghiệp, vừa phong phú đa dạng về chủng loại, kiểu dáng, vừa cam kết đảm bảo chất lượng, nhất là AN TOÀN THỰC PHẨM, bởi Viện chúng tôi có hệ thống khép kín từ khâu nghiên cứu, xây dựng mô hình, chọn tạo giống, liên kết tổ chức sản xuất theo chuỗi, chế biến, đóng gói. Đặc biệt là Viện có Phòng Phân tích, kiểm nghiệm đạt tiêu chuẩn ISO/IEC.
+
+Quý Anh/Chị muốn mua SẢN PHẨM, vui lòng vào gian hàng, giỏ hàng bên dưới đăng ký mua. Mỗi sản phẩm anh chị mua là đóng góp một phần công sức quý báu của mình trong tiêu thụ nông sản cho người Nông dân, và Quý Anh/Chị đang là nhà tiêu dùng thông thái lựa chọn sản phẩm nông nghiệp chất lượng, an toàn!`;
+
 export default function ProductCard({ product }: { product: Product }) {
   const { addToCart } = useCart();
+  const [hovered, setHovered] = useState(false);
   const reviewStats = useReviewStats(product.id);
   const rating = reviewStats ? reviewStats.avgRating : product.rating;
   const reviewCount = reviewStats ? reviewStats.count : product.reviews;
@@ -16,7 +22,25 @@ export default function ProductCard({ product }: { product: Product }) {
   const discount = isService ? 0 : discountPercent(product.originalPrice, product.price);
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col group">
+    <div
+      className="relative bg-white rounded-xl border border-gray-200 overflow-visible hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col group"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* Hover popup */}
+      {hovered && (
+        <div className="hidden md:block absolute top-8 left-1/2 -translate-x-1/2 -translate-y-full z-50 pointer-events-none" style={{ width: "300px" }}>
+          <div className="rounded-2xl overflow-hidden shadow-2xl border border-orange-300">
+            <div className="bg-gradient-to-r from-orange-500 to-amber-400 px-4 py-2.5">
+              <p className="text-white text-xs font-bold">Xin chào Quý Anh/Chị!</p>
+            </div>
+            <div className="bg-white px-4 py-3 max-h-56 overflow-y-auto">
+              <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">{POPUP_CONTENT}</p>
+            </div>
+          </div>
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-orange-300" />
+        </div>
+      )}
       {/* Image area */}
       <Link href={`/san-pham/${product.id}`} className={`${product.bg} flex items-center justify-center h-40 relative overflow-hidden`}>
         {(product.images?.[0] ?? product.imageUrl) ? (
