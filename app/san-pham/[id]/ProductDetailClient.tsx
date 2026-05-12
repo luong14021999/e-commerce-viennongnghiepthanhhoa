@@ -227,22 +227,30 @@ export default function ProductDetailClient({
               <>
                 {/* Price */}
                 <div className="bg-gray-50 rounded-xl p-4 mb-5">
-                  <div className="flex items-baseline gap-3 mb-1">
-                    <span className="text-3xl font-bold text-red-600">
-                      {formatPrice(p.price)}
-                    </span>
-                    <span className="text-sm text-gray-500">/{p.unit}</span>
-                  </div>
-                  {discount > 0 && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-base text-gray-400 line-through">
-                        {formatPrice(p.originalPrice)}
-                      </span>
-                      <span className="bg-red-100 text-red-600 text-xs font-bold px-2 py-0.5 rounded">
-                        Tiết kiệm {formatPrice(p.originalPrice - p.price)}/
-                        {p.unit}
-                      </span>
+                  {p.price === 0 ? (
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl font-bold text-green-700">Liên hệ để biết giá</span>
                     </div>
+                  ) : (
+                    <>
+                      <div className="flex items-baseline gap-3 mb-1">
+                        <span className="text-3xl font-bold text-red-600">
+                          {formatPrice(p.price)}
+                        </span>
+                        <span className="text-sm text-gray-500">/{p.unit}</span>
+                      </div>
+                      {discount > 0 && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-base text-gray-400 line-through">
+                            {formatPrice(p.originalPrice)}
+                          </span>
+                          <span className="bg-red-100 text-red-600 text-xs font-bold px-2 py-0.5 rounded">
+                            Tiết kiệm {formatPrice(p.originalPrice - p.price)}/
+                            {p.unit}
+                          </span>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
@@ -274,54 +282,75 @@ export default function ProductDetailClient({
                 </div>
 
                 {/* Quantity */}
-                <div className="flex items-center gap-4 mb-5">
-                  <span className="text-sm text-gray-600 font-medium">
-                    Số lượng:
-                  </span>
-                  <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
-                    <button
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="w-11 h-11 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors font-bold text-lg"
-                    >
-                      −
-                    </button>
-                    <span className="w-12 text-center text-base font-semibold">
-                      {quantity}
+                {p.price > 0 && (
+                  <div className="flex items-center gap-4 mb-5">
+                    <span className="text-sm text-gray-600 font-medium">
+                      Số lượng:
                     </span>
-                    <button
-                      onClick={() => setQuantity(quantity + 1)}
-                      className="w-11 h-11 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors font-bold text-lg"
-                    >
-                      +
-                    </button>
+                    <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                        className="w-11 h-11 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors font-bold text-lg"
+                      >
+                        −
+                      </button>
+                      <span className="w-12 text-center text-base font-semibold">
+                        {quantity}
+                      </span>
+                      <button
+                        onClick={() => setQuantity(quantity + 1)}
+                        className="w-11 h-11 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors font-bold text-lg"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <span className="text-sm text-gray-500">
+                      Tổng:{' '}
+                      <span className="font-bold text-red-600">
+                        {formatPrice(p.price * quantity)}
+                      </span>
+                    </span>
                   </div>
-                  <span className="text-sm text-gray-500">
-                    Tổng:{' '}
-                    <span className="font-bold text-red-600">
-                      {formatPrice(p.price * quantity)}
-                    </span>
-                  </span>
-                </div>
+                )}
 
                 {/* Buttons */}
-                <div className="flex gap-3 flex-wrap">
-                  <button
-                    onClick={handleAddToCart}
-                    className={`flex-1 min-w-36 py-3 rounded-xl font-semibold text-sm border-2 transition-colors ${
-                      added
-                        ? 'bg-green-600 border-green-600 text-white'
-                        : 'border-green-600 text-green-700 hover:bg-green-50'
-                    }`}
-                  >
-                    {added ? '✓ Đã thêm vào giỏ!' : 'Thêm vào giỏ hàng'}
-                  </button>
-                  <button
-                    onClick={handleBuyNow}
-                    className="flex-1 min-w-36 bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl font-semibold text-sm transition-colors"
-                  >
-                    Mua ngay
-                  </button>
-                </div>
+                {p.price === 0 ? (
+                  <div className="flex gap-3 flex-wrap">
+                    <a
+                      href="tel:0929606568"
+                      className="flex-1 min-w-36 bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold text-sm transition-colors text-center"
+                    >
+                      📞 Liên hệ ngay
+                    </a>
+                    <a
+                      href="https://zalo.me/0929606568"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 min-w-36 border-2 border-[#0068FF] text-[#0068FF] hover:bg-blue-50 py-3 rounded-xl font-semibold text-sm transition-colors text-center"
+                    >
+                      Chat Zalo
+                    </a>
+                  </div>
+                ) : (
+                  <div className="flex gap-3 flex-wrap">
+                    <button
+                      onClick={handleAddToCart}
+                      className={`flex-1 min-w-36 py-3 rounded-xl font-semibold text-sm border-2 transition-colors ${
+                        added
+                          ? 'bg-green-600 border-green-600 text-white'
+                          : 'border-green-600 text-green-700 hover:bg-green-50'
+                      }`}
+                    >
+                      {added ? '✓ Đã thêm vào giỏ!' : 'Thêm vào giỏ hàng'}
+                    </button>
+                    <button
+                      onClick={handleBuyNow}
+                      className="flex-1 min-w-36 bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl font-semibold text-sm transition-colors"
+                    >
+                      Mua ngay
+                    </button>
+                  </div>
+                )}
 
                 {/* Delivery note */}
                 <div className="mt-4 flex items-center gap-2 text-xs text-gray-500 bg-blue-50 rounded-lg px-3 py-2">

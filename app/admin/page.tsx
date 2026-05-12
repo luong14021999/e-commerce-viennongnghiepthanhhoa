@@ -8,12 +8,16 @@ import { useAuth } from "@/app/context/AuthContext";
 import { useProducts } from "@/app/context/ProductContext";
 import { formatPrice } from "@/app/lib/data";
 import type { Product, ProductStatus } from "@/app/lib/data";
+import { SITE_CATEGORIES } from "@/app/lib/categories";
+import { removeAccents } from "@/app/lib/utils";
 import EditProductModal from "./EditProductModal";
 import AdminOrders from "./AdminOrders";
+import AdminUsers from "./AdminUsers";
+import AdminCategories from "./AdminCategories";
 
 const INSTITUTE_NAME = "Viện Nông Nghiệp Thanh Hóa";
 type FilterTab = "all" | ProductStatus;
-type Section = "institute" | "businesses" | "orders";
+type Section = "institute" | "businesses" | "orders" | "users" | "categories";
 
 const TAB_LABELS: { key: FilterTab; label: string; color: string }[] = [
   { key: "all",      label: "Tất cả",    color: "bg-gray-600"  },
@@ -33,9 +37,14 @@ export default function AdminPage() {
   const [bizTab, setBizTab] = useState<FilterTab>("all");
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [rejectMode, setRejectMode] = useState<"reject" | "hide" | "request-edit">("reject");
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  // search + filters
+  const [searchQuery, setSearchQuery] = useState("");
+  const [catFilter, setCatFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | "product" | "service">("all");
 
   useEffect(() => {
     if (!isLoading && (!user || user.role !== "admin")) router.push("/dang-nhap");
@@ -43,10 +52,41 @@ export default function AdminPage() {
 
   if (isLoading || !user || user.role !== "admin") return null;
 
-  const instituteProducts = sellerProducts.filter((p) => p.sellerName === INSTITUTE_NAME);
-  const businessProducts = sellerProducts.filter((p) => p.sellerName !== INSTITUTE_NAME);
+  // ── helpers ──────────────────────────────────────────────────────────────
+  function isHidden(p: Product) {
+    return p.status === "rejected" && (p.rejectionReason ?? "").startsWith("[ẨN]");
+  }
 
-  const filteredInstitute = tab === "all" ? instituteProducts : instituteProducts.filter((p) => p.status === tab);
+  function completeness(p: Product): { score: number; missing: string[] } {
+    const checks = [
+      { label: "Tên sản phẩm",  ok: !!p.name?.trim() },
+      { label: "Mô tả",         ok: !!p.desc?.trim() },
+      { label: "Hình ảnh",      ok: !!(p.images?.length || p.imageUrl) },
+      { label: "Giá",           ok: p.price > 0 || p.type === "service" },
+      { label: "Thông số kỹ thuật", ok: !!(p.specs?.length) },
+      { label: "Chứng nhận",    ok: !!(p.certifications?.length) },
+      { label: "Xuất xứ",       ok: !!p.origin?.trim() },
+    ];
+    const missing = checks.filter(c => !c.ok).map(c => c.label);
+    return { score: Math.round(((checks.length - missing.length) / checks.length) * 100), missing };
+  }
+
+  // ── data ─────────────────────────────────────────────────────────────────
+  const instituteProducts = sellerProducts.filter((p) => p.sellerName === INSTITUTE_NAME);
+  const businessProducts  = sellerProducts.filter((p) => p.sellerName !== INSTITUTE_NAME);
+
+  function applyFilters(list: Product[]) {
+    let out = tab === "all" ? list : list.filter(p => p.status === tab);
+    if (searchQuery.trim()) {
+      const q = removeAccents(searchQuery.toLowerCase());
+      out = out.filter(p => removeAccents(p.name.toLowerCase()).includes(q));
+    }
+    if (catFilter !== "all") out = out.filter(p => p.category === catFilter);
+    if (typeFilter !== "all") out = out.filter(p => (p.type ?? "product") === typeFilter);
+    return out;
+  }
+
+  const filteredInstitute = applyFilters(instituteProducts);
   const instituteCounts = {
     all:      instituteProducts.length,
     pending:  instituteProducts.filter((p) => p.status === "pending").length,
@@ -60,11 +100,24 @@ export default function AdminPage() {
 
   function handleApprove(id: string) { updateStatus(id, "approved"); }
 
+  function openReject(id: string, mode: "reject" | "hide" | "request-edit") {
+    setRejectId(id);
+    setRejectMode(mode);
+    setRejectReason(mode === "hide" ? "[ẨN] Vi phạm quy định hiển thị" : "");
+  }
+
   function handleReject() {
     if (!rejectId) return;
-    updateStatus(rejectId, "rejected", rejectReason || "Không đáp ứng tiêu chuẩn");
+    const reason =
+      rejectMode === "hide"
+        ? (rejectReason || "[ẨN] Vi phạm quy định hiển thị")
+        : rejectMode === "request-edit"
+        ? (rejectReason || "Vui lòng chỉnh sửa nội dung sản phẩm")
+        : (rejectReason || "Không đáp ứng tiêu chuẩn");
+    updateStatus(rejectId, "rejected", reason);
     setRejectId(null);
     setRejectReason("");
+    setRejectMode("reject");
   }
 
   async function handleDelete() {
@@ -76,6 +129,7 @@ export default function AdminPage() {
   }
 
   function ProductActions({ p }: { p: Product }) {
+    const hidden = isHidden(p);
     return (
       <div className="flex gap-2 mt-4 flex-wrap">
         {p.status === "pending" && (<>
@@ -83,20 +137,30 @@ export default function AdminPage() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
             Phê duyệt
           </button>
-          <button onClick={() => setRejectId(p.id)} className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-700 font-semibold text-sm px-4 py-2 rounded-xl border border-red-200 transition-colors">
+          <button onClick={() => openReject(p.id, "request-edit")} className="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold text-sm px-4 py-2 rounded-xl border border-amber-200 transition-colors">
+            ✏️ Yêu cầu chỉnh sửa
+          </button>
+          <button onClick={() => openReject(p.id, "reject")} className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-700 font-semibold text-sm px-4 py-2 rounded-xl border border-red-200 transition-colors">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
             Từ chối
           </button>
         </>)}
-        {p.status === "approved" && (
-          <button onClick={() => setRejectId(p.id)} className="flex items-center gap-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 font-semibold text-sm px-4 py-2 rounded-xl border border-gray-200 transition-colors">
-            Thu hồi phê duyệt
+        {p.status === "approved" && (<>
+          <button onClick={() => openReject(p.id, "hide")} className="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-sm px-4 py-2 rounded-xl border border-gray-200 transition-colors">
+            🙈 Ẩn sản phẩm
           </button>
-        )}
+          <button onClick={() => openReject(p.id, "request-edit")} className="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold text-sm px-4 py-2 rounded-xl border border-amber-200 transition-colors">
+            ✏️ Yêu cầu chỉnh sửa
+          </button>
+        </>)}
         {p.status === "rejected" && (
-          <button onClick={() => handleApprove(p.id)} className="flex items-center gap-1.5 bg-green-50 hover:bg-green-100 text-green-700 font-semibold text-sm px-4 py-2 rounded-xl border border-green-200 transition-colors">
-            Phê duyệt lại
-          </button>
+          hidden
+            ? <button onClick={() => handleApprove(p.id)} className="flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-sm px-4 py-2 rounded-xl border border-blue-200 transition-colors">
+                👁️ Hiện lại sản phẩm
+              </button>
+            : <button onClick={() => handleApprove(p.id)} className="flex items-center gap-1.5 bg-green-50 hover:bg-green-100 text-green-700 font-semibold text-sm px-4 py-2 rounded-xl border border-green-200 transition-colors">
+                Phê duyệt lại
+              </button>
         )}
         <button onClick={() => setEditProduct(p)} className="flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-sm px-4 py-2 rounded-xl border border-blue-200 transition-colors ml-auto">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
@@ -111,27 +175,52 @@ export default function AdminPage() {
   }
 
   function ProductCard({ p }: { p: Product }) {
+    const hidden = isHidden(p);
+    const { score, missing } = completeness(p);
+    const catLabel = SITE_CATEGORIES.find(c => c.id === p.category)?.label ?? p.category;
     return (
-      <div className="bg-white rounded-2xl border border-gray-200 p-5 flex gap-4 items-start flex-wrap md:flex-nowrap">
+      <div className={`bg-white rounded-2xl border p-5 flex gap-4 items-start flex-wrap md:flex-nowrap ${hidden ? "border-gray-300 opacity-70" : "border-gray-200"}`}>
         <div className={`${p.bg} w-16 h-16 rounded-xl overflow-hidden flex items-center justify-center text-3xl flex-shrink-0 relative`}>
           {(p.images?.[0] ?? p.imageUrl) ? <Image src={p.images?.[0] ?? p.imageUrl!} alt={p.name} fill className="object-cover" sizes="64px" /> : p.icon}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3 flex-wrap">
-            <div>
-              <h3 className="font-bold text-gray-900 text-base">{p.name}</h3>
-              <p className="text-sm text-gray-500 mt-0.5">📁 {p.category} &nbsp;•&nbsp; 💰 {p.price > 0 ? formatPrice(p.price) : "Liên hệ"}/{p.unit}</p>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-bold text-gray-900 text-base">{p.name}</h3>
+                {p.tag && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${p.tagColor ?? "bg-gray-100 text-gray-600"}`}>{p.tag}</span>}
+              </div>
+              <p className="text-sm text-gray-500 mt-0.5">
+                📁 {catLabel} &nbsp;•&nbsp; 💰 {p.price > 0 ? `${formatPrice(p.price)}/${p.unit}` : "Liên hệ"}
+                {p.sellerName && p.sellerName !== INSTITUTE_NAME && <>&nbsp;•&nbsp; 🏪 {p.sellerName}</>}
+              </p>
             </div>
             <div className="flex flex-col items-end gap-1 text-xs flex-shrink-0">
-              {p.status === "pending"  && <span className="bg-amber-100 text-amber-700 font-bold px-2.5 py-1 rounded-full">⏳ Chờ duyệt</span>}
-              {p.status === "approved" && <span className="bg-green-100 text-green-700 font-bold px-2.5 py-1 rounded-full">✅ Đã duyệt</span>}
-              {p.status === "rejected" && <span className="bg-red-100 text-red-700 font-bold px-2.5 py-1 rounded-full">❌ Từ chối</span>}
+              {hidden                          && <span className="bg-gray-200 text-gray-600 font-bold px-2.5 py-1 rounded-full">🙈 Đang ẩn</span>}
+              {!hidden && p.status === "pending"  && <span className="bg-amber-100 text-amber-700 font-bold px-2.5 py-1 rounded-full">⏳ Chờ duyệt</span>}
+              {!hidden && p.status === "approved" && <span className="bg-green-100 text-green-700 font-bold px-2.5 py-1 rounded-full">✅ Đã duyệt</span>}
+              {!hidden && p.status === "rejected" && <span className="bg-red-100 text-red-700 font-bold px-2.5 py-1 rounded-full">❌ Từ chối</span>}
+              {/* Completeness bar */}
+              <div className="flex items-center gap-1.5 mt-1">
+                <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full ${score >= 85 ? "bg-green-500" : score >= 57 ? "bg-amber-400" : "bg-red-400"}`} style={{ width: `${score}%` }} />
+                </div>
+                <span className={`font-bold ${score >= 85 ? "text-green-600" : score >= 57 ? "text-amber-600" : "text-red-500"}`}>{score}%</span>
+              </div>
               <span className="text-gray-400">{p.submittedAt ? new Date(p.submittedAt).toLocaleDateString("vi-VN") : ""}</span>
             </div>
           </div>
           <p className="text-sm text-gray-600 mt-2 line-clamp-2">{p.desc}</p>
-          {p.status === "rejected" && p.rejectionReason && (
-            <p className="mt-2 text-xs text-red-600 bg-red-50 rounded-lg px-3 py-1.5">Lý do từ chối: <span className="font-semibold">{p.rejectionReason}</span></p>
+          {missing.length > 0 && (
+            <p className="mt-1.5 text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-1.5">
+              ⚠️ Thiếu: <span className="font-semibold">{missing.join(", ")}</span>
+            </p>
+          )}
+          {!hidden && p.status === "rejected" && p.rejectionReason && (
+            <p className="mt-1.5 text-xs text-red-600 bg-red-50 rounded-lg px-3 py-1.5">
+              {(p.rejectionReason ?? "").startsWith("[ẨN]") ? "Lý do ẩn:" : "Lý do từ chối:"}&nbsp;
+              <span className="font-semibold">{p.rejectionReason.replace(/^\[ẨN\]\s*/, "")}</span>
+            </p>
           )}
           <ProductActions p={p} />
         </div>
@@ -183,6 +272,18 @@ export default function AdminPage() {
           >
             📦 Đơn hàng
           </button>
+          <button
+            onClick={() => setSection("users")}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors flex-shrink-0 ${section === "users" ? "bg-purple-600 text-white shadow" : "bg-white border border-gray-200 text-gray-500 hover:text-gray-800"}`}
+          >
+            👥 Người dùng
+          </button>
+          <button
+            onClick={() => setSection("categories")}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors flex-shrink-0 ${section === "categories" ? "bg-orange-500 text-white shadow" : "bg-white border border-gray-200 text-gray-500 hover:text-gray-800"}`}
+          >
+            📁 Phân loại
+          </button>
         </div>
 
         {/* ── INSTITUTE SECTION ── */}
@@ -203,7 +304,37 @@ export default function AdminPage() {
             ))}
           </div>
 
-          {/* Filter tabs */}
+          {/* Search + filters */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-5 space-y-3">
+            <input
+              type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+              placeholder="🔍  Tìm nhanh theo tên sản phẩm..."
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50"
+            />
+            <div className="flex gap-2 flex-wrap">
+              <select value={catFilter} onChange={e => setCatFilter(e.target.value)}
+                className="flex-1 min-w-36 px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                <option value="all">📁 Tất cả danh mục</option>
+                {SITE_CATEGORIES.filter(c => c.type !== "all").map(c => (
+                  <option key={c.id} value={c.id}>{c.icon} {c.label}</option>
+                ))}
+              </select>
+              <select value={typeFilter} onChange={e => setTypeFilter(e.target.value as "all" | "product" | "service")}
+                className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                <option value="all">🛒 Tất cả loại</option>
+                <option value="product">📦 Sản phẩm</option>
+                <option value="service">🛠️ Dịch vụ</option>
+              </select>
+              {(searchQuery || catFilter !== "all" || typeFilter !== "all") && (
+                <button onClick={() => { setSearchQuery(""); setCatFilter("all"); setTypeFilter("all"); }}
+                  className="px-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-500 hover:bg-gray-50 transition-colors">
+                  ✕ Xóa lọc
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Status tabs */}
           <div className="flex gap-2 mb-5 flex-wrap">
             {TAB_LABELS.map(({ key, label, color }) => (
               <button key={key} onClick={() => setTab(key)}
@@ -212,6 +343,9 @@ export default function AdminPage() {
                 <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${tab === key ? "bg-white/20" : "bg-gray-100"}`}>{instituteCounts[key]}</span>
               </button>
             ))}
+            {filteredInstitute.length !== (tab === "all" ? instituteCounts.all : instituteCounts[tab]) && (
+              <span className="text-xs text-gray-400 self-center ml-1">→ {filteredInstitute.length} kết quả</span>
+            )}
           </div>
 
           {filteredInstitute.length === 0 ? (
@@ -228,6 +362,12 @@ export default function AdminPage() {
 
         {/* ── ORDERS SECTION ── */}
         {section === "orders" && <AdminOrders />}
+
+        {/* ── USERS SECTION ── */}
+        {section === "users" && <AdminUsers />}
+
+        {/* ── CATEGORIES SECTION ── */}
+        {section === "categories" && <AdminCategories />}
 
         {/* ── BUSINESSES SECTION ── */}
         {section === "businesses" && (<>
@@ -377,16 +517,32 @@ export default function AdminPage() {
       {rejectId && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl shadow-xl p-6 max-w-md w-full">
-            <h3 className="font-bold text-gray-900 text-lg mb-2">Từ chối sản phẩm</h3>
-            <p className="text-sm text-gray-500 mb-4">Nhập lý do từ chối để doanh nghiệp biết cần chỉnh sửa gì.</p>
+            <h3 className="font-bold text-gray-900 text-lg mb-1">
+              {rejectMode === "hide" ? "🙈 Ẩn sản phẩm" : rejectMode === "request-edit" ? "✏️ Yêu cầu chỉnh sửa" : "❌ Từ chối sản phẩm"}
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">
+              {rejectMode === "hide"
+                ? "Sản phẩm sẽ bị ẩn khỏi trang công khai. Người bán vẫn thấy trong dashboard."
+                : rejectMode === "request-edit"
+                ? "Nhập nội dung yêu cầu chỉnh sửa gửi đến người bán."
+                : "Nhập lý do từ chối để người bán biết cần cải thiện gì."}
+            </p>
             <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} rows={3}
-              placeholder="VD: Thiếu chứng nhận chất lượng, giá không hợp lý..."
+              placeholder={
+                rejectMode === "hide"
+                  ? "VD: Hình ảnh vi phạm, thông tin sai lệch..."
+                  : rejectMode === "request-edit"
+                  ? "VD: Vui lòng bổ sung hình ảnh thực tế và chứng nhận chất lượng..."
+                  : "VD: Thiếu chứng nhận chất lượng, giá không hợp lý..."
+              }
               className="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-red-400 resize-none mb-4"/>
             <div className="flex gap-3">
-              <button onClick={() => { setRejectId(null); setRejectReason(""); }}
+              <button onClick={() => { setRejectId(null); setRejectReason(""); setRejectMode("reject"); }}
                 className="flex-1 border-2 border-gray-200 text-gray-600 font-semibold py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-sm">Hủy</button>
               <button onClick={handleReject}
-                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 rounded-xl transition-colors text-sm">Xác nhận từ chối</button>
+                className={`flex-1 text-white font-bold py-2.5 rounded-xl transition-colors text-sm ${rejectMode === "hide" ? "bg-gray-600 hover:bg-gray-700" : rejectMode === "request-edit" ? "bg-amber-500 hover:bg-amber-600" : "bg-red-500 hover:bg-red-600"}`}>
+                {rejectMode === "hide" ? "Xác nhận ẩn" : rejectMode === "request-edit" ? "Gửi yêu cầu" : "Xác nhận từ chối"}
+              </button>
             </div>
           </div>
         </div>

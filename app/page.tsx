@@ -3,7 +3,9 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import HeroBanner from "./components/HeroBanner";
 import CategorySections from "./components/CategorySections";
+import ProductCard from "./components/ProductCard";
 import BusinessProductsSection from "./components/BusinessProductsSection";
+import RecentlyViewedStores from "./components/RecentlyViewedStores";
 import type { HomepageBusiness } from "./components/BusinessProductsSection";
 import { categories } from "./lib/data";
 import type { Product, ProductStatus } from "./lib/data";
@@ -85,15 +87,28 @@ export default async function HomePage() {
   const businesses: HomepageBusiness[] = sellerIds.map((sellerId) => {
     const bizProds = businessProducts.filter((p) => p.sellerId === sellerId);
     const bp = profileMap.get(sellerId);
+    const desc = bp?.description ?? "";
+    const accountTypeMatch = desc.match(/^\[([^\]]+)\]/);
+    const accountType = accountTypeMatch ? accountTypeMatch[1] : undefined;
+    const totalReviews = bizProds.reduce((s, p) => s + (p.reviews ?? 0), 0);
+    const avgRating = totalReviews > 0
+      ? bizProds.reduce((s, p) => s + (p.rating ?? 0) * (p.reviews ?? 0), 0) / totalReviews
+      : 0;
     return {
       sellerId,
       sellerName:   bp?.business_name    ?? bizProds[0]?.sellerName ?? sellerId,
       verified:     bp?.verified         ?? false,
       address:      bp?.business_address ?? "",
-      description:  bp?.description      ?? "",
+      description:  desc.replace(/^\[[^\]]+\]\s*/, ""),
+      accountType,
       productCount: bizProds.length,
       totalSold:    bizProds.reduce((s, p) => s + p.sold, 0),
+      avgRating:    Math.round(avgRating * 10) / 10,
+      reviewCount:  totalReviews,
     };
+  }).sort((a, b) => {
+    if (a.verified !== b.verified) return a.verified ? -1 : 1;
+    return b.avgRating - a.avgRating;
   });
 
   return (
@@ -117,50 +132,62 @@ export default async function HomePage() {
         </div>
       </div>
 
-      {/* Category quick-nav */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold text-gray-900">Dịch vụ</h2>
-          <Link href="/san-pham?category=tu-van" className="text-sm text-blue-700 font-medium hover:text-blue-600">
-            Xem tất cả →
-          </Link>
-        </div>
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          {serviceCategories.map((cat) => (
-            <Link
-              key={cat.id}
-              href={`/san-pham?category=${cat.id}`}
-              className="flex flex-col items-center gap-2 p-4 bg-blue-50 rounded-xl border border-blue-100 hover:border-blue-300 hover:shadow-sm transition-all group"
-            >
-              <span className="text-3xl group-hover:scale-110 transition-transform">{cat.icon}</span>
-              <span className="text-xs font-medium text-blue-800 text-center leading-tight">{cat.label}</span>
-            </Link>
-          ))}
-        </div>
-
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold text-gray-900">Sản phẩm</h2>
-          <Link href="/san-pham" className="text-sm text-green-700 font-medium hover:text-green-600">
-            Xem tất cả →
-          </Link>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {productCategories.map((cat) => (
-            <Link
-              key={cat.id}
-              href={`/san-pham?category=${cat.id}`}
-              className="flex flex-col items-center gap-2 p-4 bg-white rounded-xl border border-gray-100 hover:border-green-300 hover:shadow-sm transition-all group"
-            >
-              <span className="text-3xl group-hover:scale-110 transition-transform">{cat.icon}</span>
-              <span className="text-xs font-medium text-gray-700 text-center leading-tight">{cat.label}</span>
-            </Link>
-          ))}
+      {/* Shopee-style category grid */}
+      <section className="bg-white border-b border-gray-100 py-5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-extrabold text-gray-900 uppercase tracking-wide">Danh mục</h2>
+            <Link href="/san-pham" className="text-sm text-green-700 font-semibold hover:text-green-600">Xem tất cả →</Link>
+          </div>
+          <div className="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-10 gap-1">
+            {productCategories.map((cat) => (
+              <Link
+                key={cat.id}
+                href={`/san-pham?category=${cat.id}`}
+                className="flex flex-col items-center gap-1.5 p-2 sm:p-3 rounded-xl hover:bg-green-50 transition-colors group text-center"
+              >
+                <span className="text-2xl sm:text-3xl group-hover:scale-110 transition-transform">{cat.icon}</span>
+                <span className="text-[10px] sm:text-xs font-bold text-gray-800 leading-tight line-clamp-2">{cat.label}</span>
+              </Link>
+            ))}
+            {serviceCategories.map((cat) => (
+              <Link
+                key={cat.id}
+                href={`/san-pham?category=${cat.id}`}
+                className="flex flex-col items-center gap-1.5 p-2 sm:p-3 rounded-xl hover:bg-blue-50 transition-colors group text-center"
+              >
+                <span className="text-2xl sm:text-3xl group-hover:scale-110 transition-transform">{cat.icon}</span>
+                <span className="text-[10px] sm:text-xs font-bold text-blue-700 leading-tight line-clamp-2">{cat.label}</span>
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 
+      {/* Featured products — visible immediately */}
+      {allProducts.length > 0 && (
+        <section className="bg-gray-50 py-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-extrabold text-gray-900 uppercase tracking-wide flex items-center gap-2">
+                <span>🔥</span> Sản phẩm nổi bật
+              </h2>
+              <Link href="/san-pham" className="text-sm text-green-700 font-semibold hover:text-green-600">Xem tất cả →</Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {allProducts.slice(0, 8).map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       <BusinessProductsSection businesses={businesses} />
 
-      <CategorySections products={allProducts} />
+      <RecentlyViewedStores />
+
+<CategorySections products={allProducts} />
 
     </div>
   );

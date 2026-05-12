@@ -348,3 +348,102 @@ export async function verifyOtpAction(phone: string, otp: string): Promise<{ ok:
     return { ok: false, error: e instanceof Error ? e.message : "Lỗi xác thực OTP" };
   }
 }
+
+// ── User management (admin only) ──────────────────────────────────────────
+
+export type AdminUserRecord = {
+  id: string;
+  name: string;
+  phone: string;
+  role: "buyer" | "business" | "admin";
+  createdAt: string;
+  banned: boolean;
+  // business fields
+  businessName?: string;
+  taxCode?: string;
+  businessAddress?: string;
+  category?: string;
+  description?: string;
+  verified?: boolean;
+  accountType?: string; // extracted from [label] prefix in description
+};
+
+export async function listUsersAction(): Promise<{ ok: boolean; data?: AdminUserRecord[]; error?: string }> {
+  try {
+    const admin = getAdminClient();
+
+    const { data: profiles, error } = await admin
+      .from("profiles")
+      .select("id, name, phone, role, created_at")
+      .neq("role", "admin")
+      .order("created_at", { ascending: false });
+
+    if (error) return { ok: false, error: error.message };
+
+    const ids = (profiles ?? []).map((p: { id: string }) => p.id);
+
+    const { data: bizProfiles } = ids.length > 0
+      ? await admin.from("business_profiles").select("id, business_name, tax_code, business_address, category, description, verified").in("id", ids)
+      : { data: [] };
+
+    const bizMap = new Map((bizProfiles ?? []).map((b: { id: string }) => [b.id, b]));
+
+    // Fetch auth users to get ban status
+    const { data: authList } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    const authMap = new Map((authList?.users ?? []).map(u => [u.id, u]));
+
+    const records: AdminUserRecord[] = (profiles ?? []).map((p: { id: string; name: string; phone: string; role: string; created_at: string }) => {
+      const biz = bizMap.get(p.id) as { business_name?: string; tax_code?: string; business_address?: string; category?: string; description?: string; verified?: boolean } | undefined;
+      const authUser = authMap.get(p.id);
+      const banned = authUser?.banned_until ? new Date(authUser.banned_until) > new Date() : false;
+
+      let accountType: string | undefined;
+      if (biz?.description) {
+        const match = biz.description.match(/^\[([^\]]+)\]/);
+        if (match) accountType = match[1];
+      }
+
+      return {
+        id: p.id,
+        name: p.name,
+        phone: p.phone,
+        role: p.role as "buyer" | "business" | "admin",
+        createdAt: p.created_at,
+        banned,
+        businessName: biz?.business_name,
+        taxCode: biz?.tax_code,
+        businessAddress: biz?.business_address,
+        category: biz?.category,
+        description: biz?.description,
+        verified: biz?.verified,
+        accountType,
+      };
+    });
+
+    return { ok: true, data: records };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Lỗi hệ thống" };
+  }
+}
+
+export async function setUserVerifiedAction(userId: string, verified: boolean): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const admin = getAdminClient();
+    await admin.from("business_profiles").update({ verified }).eq("id", userId);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Lỗi hệ thống" };
+  }
+}
+
+export async function setUserBannedAction(userId: string, banned: boolean): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const admin = getAdminClient();
+    await admin.auth.admin.updateUserById(userId, {
+      ban_duration: banned ? "876600h" : "none",
+    });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Lỗi hệ thống" };
+  }
+}

@@ -5,10 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 
-const BUSINESS_CATEGORIES = [
-  "Giống cây trồng", "Phân bón & Dinh dưỡng", "Thuốc BVTV",
-  "Nông cụ & Máy móc", "Đặc sản & Thực phẩm", "Chăn nuôi", "Khác",
-];
+import { BUSINESS_CATEGORIES } from "@/app/lib/categories";
 
 export default function ProfilePage() {
   const { user, isLoading, updateBuyerProfile, updateBusinessProfile, updatePhone } = useAuth();
@@ -184,7 +181,7 @@ export default function ProfilePage() {
                   <select value={category} onChange={(e) => setCategory(e.target.value)}
                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                     <option value="">-- Chọn lĩnh vực --</option>
-                    {BUSINESS_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                    {BUSINESS_CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
                   </select>
                 </div>
                 <div>

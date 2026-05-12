@@ -98,6 +98,16 @@ export default function ProductCard({ product }: { product: Product }) {
                 Xem chi tiết & liên hệ
               </Link>
             </>
+          ) : product.price === 0 ? (
+            <>
+              <p className="text-sm font-semibold text-green-700 mb-2">Liên hệ để biết giá</p>
+              <Link
+                href={`/san-pham/${product.id}`}
+                className="block w-full text-center bg-green-600 hover:bg-green-700 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors"
+              >
+                Xem chi tiết & liên hệ
+              </Link>
+            </>
           ) : (
             <>
               <div className="flex items-baseline gap-2 mb-2">

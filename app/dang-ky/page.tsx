@@ -5,18 +5,77 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
+import { BUSINESS_CATEGORIES } from '@/app/lib/categories';
 
-type Role = 'buyer' | 'business';
+const ACCOUNT_TYPES = [
+  {
+    id: 'buyer',
+    icon: '🛒',
+    label: 'Người mua hàng',
+    desc: 'Mua sắm sản phẩm nông nghiệp',
+    isSeller: false,
+    bizLabel: '',
+    needsTax: false,
+    placeholder: '',
+  },
+  {
+    id: 'seller',
+    icon: '🏪',
+    label: 'Người bán hàng',
+    desc: 'Bán sản phẩm cá nhân / hộ gia đình',
+    isSeller: true,
+    bizLabel: 'Tên người bán / Cửa hàng',
+    needsTax: false,
+    placeholder: 'Cửa hàng Rau Sạch Anh Minh',
+  },
+  {
+    id: 'business',
+    icon: '🏢',
+    label: 'Doanh nghiệp',
+    desc: 'Công ty, hộ kinh doanh có đăng ký',
+    isSeller: true,
+    bizLabel: 'Tên doanh nghiệp',
+    needsTax: true,
+    placeholder: 'Công ty TNHH Nông Sản Xanh',
+  },
+  {
+    id: 'htx',
+    icon: '🤝',
+    label: 'Hợp tác xã',
+    desc: 'Hợp tác xã nông nghiệp',
+    isSeller: true,
+    bizLabel: 'Tên hợp tác xã',
+    needsTax: true,
+    placeholder: 'HTX Nông Sản Xanh Thanh Hóa',
+  },
+  {
+    id: 'nong-ho',
+    icon: '🌾',
+    label: 'Nông hộ',
+    desc: 'Hộ sản xuất nông nghiệp',
+    isSeller: true,
+    bizLabel: 'Tên hộ / Tên chủ hộ',
+    needsTax: false,
+    placeholder: 'Nông hộ Nguyễn Văn A',
+  },
+  {
+    id: 'lien-ket',
+    icon: '🔗',
+    label: 'Đơn vị liên kết',
+    desc: 'Đơn vị phối hợp, đối tác',
+    isSeller: true,
+    bizLabel: 'Tên đơn vị',
+    needsTax: false,
+    placeholder: 'Trung tâm Khuyến nông Thanh Hóa',
+  },
+] as const;
 
-const BUSINESS_CATEGORIES = [
-  'Giống cây trồng', 'Phân bón & Dinh dưỡng', 'Thuốc BVTV',
-  'Nông cụ & Máy móc', 'Đặc sản & Thực phẩm', 'Chăn nuôi', 'Khác',
-];
+type AccountTypeId = typeof ACCOUNT_TYPES[number]['id'];
 
 export default function RegisterPage() {
   const { registerBuyer, registerBusiness, login, user, isLoading } = useAuth();
   const router = useRouter();
-  const [role, setRole] = useState<Role>('buyer');
+  const [accountType, setAccountType] = useState<AccountTypeId>('buyer');
 
   useEffect(() => {
     if (!isLoading && user) {
@@ -39,6 +98,8 @@ export default function RegisterPage() {
     setForm(f => ({ ...f, [field]: value }));
   }
 
+  const selected = ACCOUNT_TYPES.find(t => t.id === accountType)!;
+
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     setError('');
@@ -54,17 +115,27 @@ export default function RegisterPage() {
       setError('Mật khẩu phải có ít nhất 6 ký tự');
       return;
     }
-    if (role === 'business' && (!form.businessName || !form.taxCode || !form.businessAddress || !form.category)) {
-      setError('Vui lòng điền đầy đủ thông tin doanh nghiệp');
-      return;
+    if (selected.isSeller) {
+      if (!form.businessName || !form.businessAddress || !form.category) {
+        setError('Vui lòng điền đầy đủ thông tin tổ chức');
+        return;
+      }
+      if (selected.needsTax && !form.taxCode) {
+        setError('Vui lòng nhập mã số thuế / ĐKKD');
+        return;
+      }
     }
+
     setLoading(true);
-    const result = role === 'buyer'
+    const result = !selected.isSeller
       ? await registerBuyer({ name: form.name, phone: form.phone, email: form.email, password: form.password })
       : await registerBusiness({
           name: form.name, phone: form.phone, email: form.email, password: form.password,
-          businessName: form.businessName, taxCode: form.taxCode,
-          businessAddress: form.businessAddress, category: form.category, description: form.description,
+          businessName: form.businessName,
+          taxCode: form.taxCode,
+          businessAddress: form.businessAddress,
+          category: form.category,
+          description: `[${selected.label}] ${form.description}`.trim(),
         });
 
     if (!result.ok) {
@@ -85,10 +156,11 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
-      <div className="w-full max-w-lg">
+      <div className="w-full max-w-xl">
+        {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-3">
-            <Image src="/thanh_hoa_agriculture_logo.png" alt="Viện Nông Nghiệp Thanh Hóa" width={88} height={88} className="flex-shrink-0 object-contain" />
+            <Image src="/thanh_hoa_agriculture_logo.png" alt="Viện Nông Nghiệp Thanh Hóa" width={80} height={80} className="flex-shrink-0 object-contain" />
             <div className="text-left">
               <div className="text-xl font-extrabold text-green-800 uppercase leading-tight">Viện Nông Nghiệp</div>
               <div className="text-base font-bold text-green-600">Thanh Hóa</div>
@@ -98,35 +170,46 @@ export default function RegisterPage() {
           <p className="text-gray-500 text-sm">Chọn loại tài khoản phù hợp với bạn</p>
         </div>
 
-        {/* Role selector */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          {(['buyer', 'business'] as Role[]).map(r => (
-            <button key={r} type="button" onClick={() => setRole(r)}
-              className={`flex flex-col items-center gap-2 p-5 rounded-2xl border-2 transition-all ${
-                role === r ? 'border-green-600 bg-green-50' : 'border-gray-200 bg-white hover:border-green-300'
-              }`}>
-              <span className="text-4xl">{r === 'buyer' ? '🛒' : '🏪'}</span>
-              <span className="font-bold text-gray-800">{r === 'buyer' ? 'Người mua' : 'Doanh nghiệp'}</span>
-              <span className="text-xs text-gray-500 text-center">
-                {r === 'buyer' ? 'Mua sắm sản phẩm nông nghiệp' : 'Đăng bán sản phẩm của bạn'}
+        {/* Account type grid */}
+        <div className="grid grid-cols-3 gap-2.5 mb-5">
+          {ACCOUNT_TYPES.map(t => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setAccountType(t.id)}
+              className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition-all text-center ${
+                accountType === t.id
+                  ? 'border-green-600 bg-green-50 shadow-sm'
+                  : 'border-gray-200 bg-white hover:border-green-300'
+              }`}
+            >
+              <span className="text-3xl">{t.icon}</span>
+              <span className={`text-xs font-bold leading-tight ${accountType === t.id ? 'text-green-700' : 'text-gray-800'}`}>
+                {t.label}
               </span>
-              {role === r && <span className="text-green-600 text-xs font-semibold">✓ Đã chọn</span>}
+              <span className="text-[10px] text-gray-400 leading-tight hidden sm:block">{t.desc}</span>
+              {accountType === t.id && (
+                <span className="text-[10px] text-green-600 font-semibold">✓ Đã chọn</span>
+              )}
             </button>
           ))}
         </div>
 
-        {role === 'business' && (
+        {/* Notice for seller types */}
+        {selected.isSeller && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4 text-xs text-amber-800 flex gap-2">
-            <span className="text-lg flex-shrink-0">ℹ️</span>
+            <span className="text-base flex-shrink-0">ℹ️</span>
             <p>Sản phẩm của bạn sẽ được kiểm duyệt bởi Viện Nông Nghiệp trước khi hiển thị trên sàn. Thông thường mất 1–2 ngày làm việc.</p>
           </div>
         )}
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-8">
           <form onSubmit={handleSubmit} className="space-y-4">
             {success && (
               <div className="bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-xl flex items-center gap-2">
-                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
+                </svg>
                 {success}
               </div>
             )}
@@ -136,6 +219,7 @@ export default function RegisterPage() {
               </div>
             )}
 
+            {/* Common fields */}
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
@@ -192,50 +276,61 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {role === 'business' && (
+            {/* Seller-type extra fields */}
+            {selected.isSeller && (
               <>
                 <hr className="border-gray-200" />
-                <p className="text-sm font-bold text-gray-700 flex items-center gap-2"><span>🏪</span> Thông tin doanh nghiệp</p>
+                <p className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                  <span>{selected.icon}</span> Thông tin {selected.label}
+                </p>
+
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                    Tên doanh nghiệp / HTX / Hộ kinh doanh <span className="text-red-500">*</span>
+                    {selected.bizLabel} <span className="text-red-500">*</span>
                   </label>
                   <input type="text" value={form.businessName} onChange={e => setField('businessName', e.target.value)}
-                    placeholder="HTX Nông Sản Xanh Thanh Hóa"
+                    placeholder={selected.placeholder}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
                 </div>
+
                 <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                      Mã số thuế / ĐKKD <span className="text-red-500">*</span>
-                    </label>
-                    <input type="text" value={form.taxCode} onChange={e => setField('taxCode', e.target.value)}
-                      placeholder="2801234567"
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
-                  </div>
-                  <div>
+                  {selected.needsTax && (
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                        Mã số thuế / ĐKKD <span className="text-red-500">*</span>
+                      </label>
+                      <input type="text" value={form.taxCode} onChange={e => setField('taxCode', e.target.value)}
+                        placeholder="2801234567"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                    </div>
+                  )}
+                  <div className={selected.needsTax ? '' : 'sm:col-span-2'}>
                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                       Lĩnh vực kinh doanh <span className="text-red-500">*</span>
                     </label>
                     <select value={form.category} onChange={e => setField('category', e.target.value)}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white">
                       <option value="">-- Chọn lĩnh vực --</option>
-                      {BUSINESS_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      {BUSINESS_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                     </select>
                   </div>
                 </div>
+
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                    Địa chỉ kinh doanh <span className="text-red-500">*</span>
+                    Địa chỉ <span className="text-red-500">*</span>
                   </label>
                   <input type="text" value={form.businessAddress} onChange={e => setField('businessAddress', e.target.value)}
                     placeholder="Xã/Phường, Huyện/Thị xã, Thanh Hóa"
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
                 </div>
+
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Mô tả hoạt động kinh doanh</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                    Mô tả hoạt động <span className="text-gray-400 font-normal">(tùy chọn)</span>
+                  </label>
                   <textarea value={form.description} onChange={e => setField('description', e.target.value)} rows={3}
-                    placeholder="Mô tả ngắn về doanh nghiệp và sản phẩm bạn muốn bán..."
+                    placeholder="Mô tả ngắn về sản phẩm / dịch vụ bạn muốn đăng bán..."
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none" />
                 </div>
               </>
@@ -251,7 +346,9 @@ export default function RegisterPage() {
                   </svg>
                   Đang đăng ký...
                 </>
-              ) : role === 'business' ? 'Đăng ký tài khoản doanh nghiệp' : 'Đăng ký tài khoản'}
+              ) : (
+                `Đăng ký — ${selected.label}`
+              )}
             </button>
           </form>
 

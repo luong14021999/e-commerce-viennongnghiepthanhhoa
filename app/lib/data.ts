@@ -37,16 +37,7 @@ export type Category = {
   type: CategoryType;
 };
 
-export const categories: Category[] = [
-  { id: 'tat-ca', label: 'Tất cả', icon: '🛒', type: 'all' },
-  { id: 'tu-van', label: 'Tư vấn nông nghiệp', icon: '📋', type: 'service' },
-  { id: 'phan-tich', label: 'Phân tích – kiểm nghiệm', icon: '🔬', type: 'service' },
-  { id: 'dao-tao', label: 'Đào tạo – chuyển giao công nghệ', icon: '🎓', type: 'service' },
-  { id: 'giong-cay-trong', label: 'Giống cây trồng', icon: '🌾', type: 'product' },
-  { id: 'giong-vat-nuoi', label: 'Giống vật nuôi – thủy sản', icon: '🐄', type: 'product' },
-  { id: 'san-pham-vien', label: 'Sản phẩm Viện Nông Nghiệp', icon: '🌿', type: 'product' },
-  { id: 'vat-tu', label: 'Vật tư – chế phẩm', icon: '🧪', type: 'product' },
-];
+export { SITE_CATEGORIES as categories } from "./categories";
 
 export function formatPrice(price: number): string {
   return price.toLocaleString('vi-VN') + 'đ';

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useCart } from '@/app/context/CartContext';
 import { useAuth } from '@/app/context/AuthContext';
@@ -21,7 +21,6 @@ type Suggestion = {
 };
 
 export default function Header() {
-  const pathname = usePathname();
   const router = useRouter();
   const { totalItems } = useCart();
   const { user, logout } = useAuth();
@@ -419,66 +418,6 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Category nav */}
-      <div className="border-t border-gray-100 bg-white hidden sm:block">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
-            <Link
-              href="/"
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
-                pathname === '/' ? 'border-green-600 text-green-700' : 'border-transparent text-gray-600 hover:text-green-700 hover:border-green-300'
-              }`}
-            >
-              🏠 Trang chủ
-            </Link>
-            <span className="w-px h-5 bg-gray-200 flex-shrink-0" />
-            <Link
-              href="/san-pham"
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
-                pathname === '/san-pham' ? 'border-green-600 text-green-700' : 'border-transparent text-gray-600 hover:text-green-700 hover:border-green-300'
-              }`}
-            >
-              🛒 Tất cả
-            </Link>
-            <span className="w-px h-5 bg-gray-200 flex-shrink-0" />
-            <span className="text-xs text-blue-500 font-semibold px-1 whitespace-nowrap flex-shrink-0">Dịch vụ</span>
-            {categories.filter(c => c.type === 'service').map(cat => (
-              <Link
-                key={cat.id}
-                href={`/san-pham?category=${cat.id}`}
-                className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
-                  pathname.includes('san-pham') &&
-                  typeof window !== 'undefined' &&
-                  new URLSearchParams(window.location.search).get('category') === cat.id
-                    ? 'border-blue-600 text-blue-700'
-                    : 'border-transparent text-gray-600 hover:text-blue-700 hover:border-blue-300'
-                }`}
-              >
-                <span>{cat.icon}</span>
-                {cat.label}
-              </Link>
-            ))}
-            <span className="w-px h-5 bg-gray-200 flex-shrink-0" />
-            <span className="text-xs text-green-600 font-semibold px-1 whitespace-nowrap flex-shrink-0">Sản phẩm</span>
-            {categories.filter(c => c.type === 'product').map(cat => (
-              <Link
-                key={cat.id}
-                href={`/san-pham?category=${cat.id}`}
-                className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
-                  pathname.includes('san-pham') &&
-                  typeof window !== 'undefined' &&
-                  new URLSearchParams(window.location.search).get('category') === cat.id
-                    ? 'border-green-600 text-green-700'
-                    : 'border-transparent text-gray-600 hover:text-green-700 hover:border-green-300'
-                }`}
-              >
-                <span>{cat.icon}</span>
-                {cat.label}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </div>
 
       {/* Mobile nav menu */}
       {mobileMenuOpen && (

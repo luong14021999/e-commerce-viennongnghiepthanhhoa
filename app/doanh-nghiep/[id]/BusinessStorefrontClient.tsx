@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import ProductCard from "@/app/components/ProductCard";
 import { categories } from "@/app/lib/data";
@@ -15,6 +15,26 @@ type Props = {
 
 export default function BusinessStorefrontClient({ products, profile, sellerId }: Props) {
   const [activeCategory, setActiveCategory] = useState("tat-ca");
+
+  // Track recently viewed stores in localStorage
+  useEffect(() => {
+    const displayName = profile?.name ?? products[0]?.sellerName ?? "Gian hàng";
+    const accountTypeMatch = profile?.description?.match(/^\[([^\]]+)\]/);
+    const entry = {
+      sellerId,
+      sellerName: displayName,
+      address: profile?.address ?? "",
+      productCount: products.length,
+      verified: profile?.verified ?? false,
+      accountType: accountTypeMatch ? accountTypeMatch[1] : undefined,
+    };
+    try {
+      const stored = JSON.parse(localStorage.getItem("recentStores") ?? "[]") as typeof entry[];
+      const updated = [entry, ...stored.filter((s) => s.sellerId !== sellerId)].slice(0, 10);
+      localStorage.setItem("recentStores", JSON.stringify(updated));
+    } catch { /* ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sellerId]);
 
   const productCategories = useMemo(() => {
     const ids = new Set(products.map((p) => p.category));
