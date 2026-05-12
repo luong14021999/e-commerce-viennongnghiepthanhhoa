@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useRef, useState } from "react";
 
-type FlyFn = (sourceEl: HTMLElement, icon: string, imageUrl?: string) => void;
+type FlyFn = (sourceEl: HTMLElement) => void;
 
 const CartFlyContext = createContext<FlyFn>(() => {});
 
@@ -16,15 +16,13 @@ type FlyItem = {
   startY: number;
   dx: number;
   dy: number;
-  icon: string;
-  imageUrl?: string;
 };
 
 export function CartFlyProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<FlyItem[]>([]);
   const counter = useRef(0);
 
-  const fly = useCallback<FlyFn>((sourceEl, icon, imageUrl) => {
+  const fly = useCallback<FlyFn>((sourceEl: HTMLElement) => {
     const cartEl = document.getElementById("cart-icon");
     if (!cartEl) return;
 
@@ -37,15 +35,14 @@ export function CartFlyProvider({ children }: { children: React.ReactNode }) {
     const dy = cartRect.top + cartRect.height / 2 - 20 - startY;
 
     const id = ++counter.current;
-    setItems(prev => [...prev, { id, startX, startY, dx, dy, icon, imageUrl }]);
+    setItems(prev => [...prev, { id, startX, startY, dx, dy }]);
 
     setTimeout(() => {
       setItems(prev => prev.filter(i => i.id !== id));
-      // Bounce the cart badge on arrival
       const badge = document.getElementById("cart-badge");
       if (badge) {
         badge.classList.remove("cart-badge-bounce");
-        void badge.offsetWidth; // force reflow
+        void badge.offsetWidth;
         badge.classList.add("cart-badge-bounce");
         setTimeout(() => badge.classList.remove("cart-badge-bounce"), 600);
       }
@@ -69,12 +66,9 @@ export function CartFlyProvider({ children }: { children: React.ReactNode }) {
             "--fly-dy": `${item.dy}px`,
           } as React.CSSProperties}
         >
-          {item.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={item.imageUrl} alt="" className="w-full h-full object-cover" />
-          ) : (
-            <span style={{ fontSize: 20, lineHeight: 1 }}>{item.icon}</span>
-          )}
+          <svg style={{ width: 20, height: 20, color: "#fff" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
         </div>
       ))}
     </CartFlyContext.Provider>

@@ -59,7 +59,7 @@ export default function ProductDetailClient({
 
   function handleAddToCart(e: React.MouseEvent<HTMLButtonElement>) {
     addToCart(p, quantity);
-    fly(e.currentTarget, p.icon, p.images?.[0] ?? p.imageUrl ?? undefined);
+    fly(e.currentTarget);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   }

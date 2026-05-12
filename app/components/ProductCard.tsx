@@ -122,7 +122,7 @@ export default function ProductCard({ product }: { product: Product }) {
               <button
                 onClick={(e) => {
                   addToCart(product);
-                  fly(e.currentTarget, product.icon, product.images?.[0] ?? product.imageUrl ?? undefined);
+                  fly(e.currentTarget);
                 }}
                 className="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors"
               >
