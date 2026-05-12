@@ -6,6 +6,7 @@ import Footer from "./components/Footer";
 import FloatingContact from "./components/FloatingContact";
 import HomeBreadcrumb from "./components/HomeBreadcrumb";
 import { CartProvider } from "./context/CartContext";
+import { CartFlyProvider } from "./components/CartFlyer";
 import { AuthProvider } from "./context/AuthContext";
 import { ProductProvider } from "./context/ProductContext";
 import { ReviewStatsProvider } from "./context/ReviewStatsContext";
@@ -42,11 +43,13 @@ export default function RootLayout({
           <ProductProvider>
             <ReviewStatsProvider>
               <CartProvider>
-                <Header />
-                <HomeBreadcrumb />
-                <main className="flex-1">{children}</main>
-                <Footer />
-                <FloatingContact />
+                <CartFlyProvider>
+                  <Header />
+                  <HomeBreadcrumb />
+                  <main className="flex-1">{children}</main>
+                  <Footer />
+                  <FloatingContact />
+                </CartFlyProvider>
               </CartProvider>
             </ReviewStatsProvider>
           </ProductProvider>

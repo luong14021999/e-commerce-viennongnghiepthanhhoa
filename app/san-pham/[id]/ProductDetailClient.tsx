@@ -7,6 +7,7 @@ import { notFound } from 'next/navigation';
 import type { Product } from '@/app/lib/data';
 import { formatPrice, discountPercent } from '@/app/lib/data';
 import { useCart } from '@/app/context/CartContext';
+import { useCartFly } from '@/app/components/CartFlyer';
 import { useProducts } from '@/app/context/ProductContext';
 import ProductCard from '@/app/components/ProductCard';
 import ProductReviews from '@/app/components/ProductReviews';
@@ -22,6 +23,7 @@ export default function ProductDetailClient({
   related: Product[];
 }) {
   const { addToCart } = useCart();
+  const fly = useCartFly();
   const { sellerProducts, isLoaded } = useProducts();
   const router = useRouter();
   const [quantity, setQuantity] = useState(1);
@@ -55,8 +57,9 @@ export default function ProductDetailClient({
     p.images && p.images.length > 0 ? p.images : p.imageUrl ? [p.imageUrl] : [];
   const discount = isService ? 0 : discountPercent(p.originalPrice, p.price);
 
-  function handleAddToCart() {
+  function handleAddToCart(e: React.MouseEvent<HTMLButtonElement>) {
     addToCart(p, quantity);
+    fly(e.currentTarget, p.icon, p.images?.[0] ?? p.imageUrl ?? undefined);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   }

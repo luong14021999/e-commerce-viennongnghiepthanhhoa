@@ -6,6 +6,7 @@ import { useState } from "react";
 import type { Product } from "@/app/lib/data";
 import { formatPrice, discountPercent } from "@/app/lib/data";
 import { useCart } from "@/app/context/CartContext";
+import { useCartFly } from "@/app/components/CartFlyer";
 import { useReviewStats } from "@/app/context/ReviewStatsContext";
 
 const POPUP_CONTENT = `Quý Anh/Chị đang quan tâm đến sản phẩm của VIỆN NÔNG NGHIỆP THANH HÓA — nơi cam kết AN TOÀN THỰC PHẨM với hệ thống khép kín từ nghiên cứu, chọn tạo giống đến chế biến, đóng gói đạt chuẩn ISO/IEC.
@@ -14,6 +15,7 @@ Vui lòng vào giỏ hàng để đặt mua. Mỗi sản phẩm Quý Anh/Chị c
 
 export default function ProductCard({ product }: { product: Product }) {
   const { addToCart } = useCart();
+  const fly = useCartFly();
   const [hovered, setHovered] = useState(false);
   const reviewStats = useReviewStats(product.id);
   const rating = reviewStats ? reviewStats.avgRating : product.rating;
@@ -118,7 +120,10 @@ export default function ProductCard({ product }: { product: Product }) {
                 <span className="text-xs text-gray-500">/{product.unit}</span>
               </div>
               <button
-                onClick={() => addToCart(product)}
+                onClick={(e) => {
+                  addToCart(product);
+                  fly(e.currentTarget, product.icon, product.images?.[0] ?? product.imageUrl ?? undefined);
+                }}
                 className="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors"
               >
                 Thêm vào giỏ
