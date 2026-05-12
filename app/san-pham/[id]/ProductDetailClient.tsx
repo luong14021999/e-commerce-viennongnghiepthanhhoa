@@ -141,7 +141,7 @@ export default function ProductDetailClient({
             </h1>
 
             {/* Rating */}
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-3 mb-4 flex-wrap">
               <div className="flex items-center gap-1">
                 {[1, 2, 3, 4, 5].map(s => (
                   <svg
@@ -283,7 +283,7 @@ export default function ProductDetailClient({
 
                 {/* Quantity */}
                 {p.price > 0 && (
-                  <div className="flex items-center gap-4 mb-5">
+                  <div className="flex items-center gap-3 mb-5 flex-wrap">
                     <span className="text-sm text-gray-600 font-medium">
                       Số lượng:
                     </span>

@@ -91,14 +91,14 @@ export default function BusinessCarousel({ businesses }: { businesses: HomepageB
               <button
                 onClick={prev}
                 aria-label="Trước"
-                className="w-8 h-8 rounded-full border border-gray-200 bg-white hover:bg-gray-50 flex items-center justify-center text-gray-500 hover:text-gray-900 transition-colors text-xl font-bold leading-none"
+                className="w-10 h-10 rounded-full border border-gray-200 bg-white hover:bg-gray-50 flex items-center justify-center text-gray-500 hover:text-gray-900 transition-colors text-xl font-bold leading-none"
               >
                 ‹
               </button>
               <button
                 onClick={next}
                 aria-label="Tiếp"
-                className="w-8 h-8 rounded-full border border-gray-200 bg-white hover:bg-gray-50 flex items-center justify-center text-gray-500 hover:text-gray-900 transition-colors text-xl font-bold leading-none"
+                className="w-10 h-10 rounded-full border border-gray-200 bg-white hover:bg-gray-50 flex items-center justify-center text-gray-500 hover:text-gray-900 transition-colors text-xl font-bold leading-none"
               >
                 ›
               </button>

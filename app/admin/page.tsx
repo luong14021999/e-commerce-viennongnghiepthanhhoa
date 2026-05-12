@@ -179,7 +179,7 @@ export default function AdminPage() {
     const { score, missing } = completeness(p);
     const catLabel = SITE_CATEGORIES.find(c => c.id === p.category)?.label ?? p.category;
     return (
-      <div className={`bg-white rounded-2xl border p-5 flex gap-4 items-start flex-wrap md:flex-nowrap ${hidden ? "border-gray-300 opacity-70" : "border-gray-200"}`}>
+      <div className={`bg-white rounded-2xl border p-4 sm:p-5 flex gap-3 sm:gap-4 items-start flex-wrap md:flex-nowrap ${hidden ? "border-gray-300 opacity-70" : "border-gray-200"}`}>
         <div className={`${p.bg} w-16 h-16 rounded-xl overflow-hidden flex items-center justify-center text-3xl flex-shrink-0 relative`}>
           {(p.images?.[0] ?? p.imageUrl) ? <Image src={p.images?.[0] ?? p.imageUrl!} alt={p.name} fill className="object-cover" sizes="64px" /> : p.icon}
         </div>
@@ -296,10 +296,10 @@ export default function AdminPage() {
               { label: "Đã duyệt",       value: instituteCounts.approved, icon: "✅", bg: "bg-green-50 border-green-200 text-green-700" },
               { label: "Từ chối",        value: instituteCounts.rejected, icon: "❌", bg: "bg-red-50   border-red-200   text-red-700"   },
             ].map((s) => (
-              <div key={s.label} className={`rounded-2xl border p-5 ${s.bg}`}>
-                <div className="text-2xl mb-1">{s.icon}</div>
-                <div className="text-3xl font-bold mb-0.5">{s.value}</div>
-                <div className="text-sm font-medium">{s.label}</div>
+              <div key={s.label} className={`rounded-2xl border p-3 sm:p-5 ${s.bg}`}>
+                <div className="text-xl sm:text-2xl mb-1">{s.icon}</div>
+                <div className="text-2xl sm:text-3xl font-bold mb-0.5">{s.value}</div>
+                <div className="text-xs sm:text-sm font-medium">{s.label}</div>
               </div>
             ))}
           </div>

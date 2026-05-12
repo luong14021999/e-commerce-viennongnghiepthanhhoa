@@ -171,7 +171,7 @@ export default function RegisterPage() {
         </div>
 
         {/* Account type grid */}
-        <div className="grid grid-cols-3 gap-2.5 mb-5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-5">
           {ACCOUNT_TYPES.map(t => (
             <button
               key={t.id}

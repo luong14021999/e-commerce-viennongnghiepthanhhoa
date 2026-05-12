@@ -161,7 +161,7 @@ export default function EditProductModal({ product, onClose, resubmit }: {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl my-auto">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-white rounded-t-2xl z-10">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 sticky top-0 bg-white rounded-t-2xl z-10">
           <div>
             <h2 className="font-bold text-gray-900 text-lg">{resubmit ? "Bổ sung & Gửi lại" : "Chỉnh sửa sản phẩm"}</h2>
             <p className="text-xs text-gray-400 mt-0.5">Các trường <span className="text-red-500">*</span> là bắt buộc</p>
@@ -169,7 +169,7 @@ export default function EditProductModal({ product, onClose, resubmit }: {
           <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-xl leading-none w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors">✕</button>
         </div>
 
-        <form onSubmit={handleSave} className="p-6 space-y-5">
+        <form onSubmit={handleSave} className="p-4 sm:p-6 space-y-5">
           {resubmit && product.rejectionReason && (
             <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">
               <span className="font-semibold">Lý do từ chối: </span>{product.rejectionReason}
@@ -300,18 +300,18 @@ export default function EditProductModal({ product, onClose, resubmit }: {
                   <input
                     type="text" value={row.key}
                     onChange={e => updateSpec(idx, "key", e.target.value)}
-                    placeholder={isService ? `Mục ${idx + 1}` : `Thuộc tính (VD: Giống lúa)`}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder={isService ? `Mục ${idx + 1}` : `Thuộc tính`}
+                    className="flex-1 min-w-0 px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                   <span className="text-gray-400 flex-shrink-0">:</span>
                   <input
                     type="text" value={row.val}
                     onChange={e => updateSpec(idx, "val", e.target.value)}
-                    placeholder={isService ? `Nội dung` : `Giá trị (VD: BC15)`}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder={isService ? `Nội dung` : `Giá trị`}
+                    className="flex-1 min-w-0 px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                   <button type="button" onClick={() => removeSpec(idx)}
-                    className="text-gray-400 hover:text-red-500 w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 transition-colors flex-shrink-0">
+                    className="text-gray-400 hover:text-red-500 w-9 h-9 flex items-center justify-center rounded-lg hover:bg-red-50 transition-colors flex-shrink-0">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -351,16 +351,16 @@ export default function EditProductModal({ product, onClose, resubmit }: {
               {existingImages.map((url, idx) => (
                 <div key={url} className={`relative w-24 h-24 rounded-xl overflow-hidden group flex-shrink-0 border-2 ${idx === 0 ? "border-green-500" : "border-gray-200"}`}>
                   <Image src={url} alt="" fill className="object-cover" sizes="96px" />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors" />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
                   {idx === 0
                     ? <span className="absolute bottom-0 left-0 right-0 bg-green-600/90 text-white text-[10px] font-bold text-center py-0.5">★ Ảnh chính</span>
                     : <button type="button" onClick={() => setMainImage(idx)}
-                        className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] text-center py-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] text-center py-0.5">
                         Đặt làm chính
                       </button>
                   }
                   <button type="button" onClick={() => removeExistingImage(url)}
-                    className="absolute top-1 right-1 bg-black/60 hover:bg-red-600 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    className="absolute top-1 right-1 bg-black/60 hover:bg-red-600 text-white rounded-full w-6 h-6 text-xs flex items-center justify-center">
                     ✕
                   </button>
                 </div>
@@ -370,7 +370,7 @@ export default function EditProductModal({ product, onClose, resubmit }: {
                   <img src={src} alt="" className="w-full h-full object-cover" />
                   <span className="absolute bottom-0 left-0 right-0 bg-green-600/80 text-white text-[10px] font-bold text-center py-0.5">Mới</span>
                   <button type="button" onClick={() => removeNewFile(idx)}
-                    className="absolute top-1 right-1 bg-black/60 hover:bg-red-600 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    className="absolute top-1 right-1 bg-black/60 hover:bg-red-600 text-white rounded-full w-6 h-6 text-xs flex items-center justify-center">
                     ✕
                   </button>
                 </div>

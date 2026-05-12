@@ -53,7 +53,7 @@ export default function FloatingContact() {
 
       {/* Popup */}
       {open && (
-        <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-72 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-[min(288px,calc(100vw-2rem))] overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-green-700 to-green-600 px-4 py-3 flex items-center justify-between">
             <div>
@@ -62,7 +62,7 @@ export default function FloatingContact() {
                 {selected ? selected.label : 'Chúng tôi hỗ trợ gì cho bạn?'}
               </p>
             </div>
-            <button onClick={handleClose} className="text-white/70 hover:text-white text-xl leading-none w-7 h-7 flex items-center justify-center">×</button>
+            <button onClick={handleClose} className="text-white/70 hover:text-white text-xl leading-none w-10 h-10 flex items-center justify-center flex-shrink-0">×</button>
           </div>
 
           {!selected ? (
