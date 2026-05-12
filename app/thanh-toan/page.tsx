@@ -9,6 +9,7 @@ import { useCart } from "@/app/context/CartContext";
 import { useAuth } from "@/app/context/AuthContext";
 import { formatPrice } from "@/app/lib/data";
 import { createOrderAction } from "@/lib/actions";
+import { THANH_HOA_COMMUNES } from "@/app/lib/thanhhoa-address";
 
 const SHIPPING_FEE = 30000;
 const SHIPPING_THRESHOLD = 500000;
@@ -32,7 +33,7 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [loading, setLoading] = useState(false);
   const [confirmedOrderId, setConfirmedOrderId] = useState("");
-  const [form, setForm] = useState({ name: "", phone: "", address: "", city: "Thanh Hóa", note: "" });
+  const [form, setForm] = useState({ name: "", phone: "", address: "", city: "Thanh Hóa", commune: "", note: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Pre-fill form when user data becomes available
@@ -116,6 +117,7 @@ export default function CheckoutPage() {
     const errs: Record<string, string> = {};
     if (!form.name.trim()) errs.name = "Vui lòng nhập họ tên";
     if (!form.phone.trim()) errs.phone = "Vui lòng nhập số điện thoại";
+    if (!form.commune) errs.commune = "Vui lòng chọn xã/phường";
     if (!form.address.trim()) errs.address = "Vui lòng nhập địa chỉ giao hàng";
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -132,7 +134,7 @@ export default function CheckoutPage() {
     const result = await createOrderAction({
       shippingName: form.name,
       shippingPhone: form.phone,
-      shippingAddress: `${form.address}, ${form.city}`,
+      shippingAddress: [form.address, form.commune, form.city].filter(Boolean).join(", "),
       note: form.note || undefined,
       totalPrice,
       shippingFee,
@@ -181,7 +183,7 @@ export default function CheckoutPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Địa chỉ:</span>
-              <span className="font-semibold text-right max-w-48">{form.address}, {form.city}</span>
+              <span className="font-semibold text-right max-w-48">{[form.address, form.commune, form.city].filter(Boolean).join(", ")}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Thanh toán:</span>
@@ -291,14 +293,31 @@ export default function CheckoutPage() {
 
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                      Địa chỉ giao hàng <span className="text-red-500">*</span>
+                      Xã / Phường <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={form.commune}
+                      onChange={(e) => setField("commune", e.target.value)}
+                      className={`w-full px-4 py-3 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white ${errors.commune ? "border-red-400" : "border-gray-300"}`}
+                    >
+                      <option value="">-- Chọn xã/phường --</option>
+                      {THANH_HOA_COMMUNES.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                    {errors.commune && <p className="text-xs text-red-500 mt-1">{errors.commune}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                      Địa chỉ cụ thể <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={form.address}
                       onChange={(e) => setField("address", e.target.value)}
                       className={`w-full px-4 py-3 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.address ? "border-red-400" : "border-gray-300"}`}
-                      placeholder="Số nhà, tên đường, xã/phường, huyện..."
+                      placeholder="Số nhà, tên đường, thôn/xóm..."
                     />
                     {errors.address && <p className="text-xs text-red-500 mt-1">{errors.address}</p>}
                   </div>
@@ -483,7 +502,9 @@ export default function CheckoutPage() {
                 <div className="mt-4 bg-gray-50 rounded-lg p-3 text-xs text-gray-600 space-y-1">
                   <p className="font-semibold text-gray-700">Giao đến:</p>
                   <p>{form.name} – {form.phone}</p>
-                  {form.address && <p>{form.address}, {form.city}</p>}
+                  {(form.address || form.commune) && (
+                    <p>{[form.address, form.commune, form.city].filter(Boolean).join(", ")}</p>
+                  )}
                 </div>
               )}
             </div>
