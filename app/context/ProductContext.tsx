@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from "rea
 import { createClient } from "@/lib/supabase/client";
 import { uploadProductImages } from "@/lib/storage";
 import type { Product, ProductStatus } from "@/app/lib/data";
+import { useAuth } from "@/app/context/AuthContext";
 
 export type SellerProfile = {
   id: string;
@@ -95,6 +96,7 @@ function buildSellerProfiles(products: Product[]): Record<string, SellerProfile>
 }
 
 export function ProductProvider({ children }: { children: React.ReactNode }) {
+  const { user, isLoading: authLoading } = useAuth();
   const [sellerProducts, setSellerProducts] = useState<Product[]>([]);
   const [sellerProfiles, setSellerProfiles] = useState<Record<string, SellerProfile>>({});
   const [isLoaded, setIsLoaded] = useState(false);
@@ -115,6 +117,16 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Wait for auth to resolve before deciding whether to fetch.
+    if (authLoading) return;
+
+    // Buyers and guests don't need the product management context —
+    // skip the DB fetch entirely for them.
+    if (!user || user.role === "buyer") {
+      setIsLoaded(true);
+      return;
+    }
+
     loadProducts();
 
     const supabase = createClient();
@@ -126,7 +138,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [loadProducts]);
+  }, [user, authLoading, loadProducts]);
 
   async function submitProduct(
     data: Omit<Product, "id" | "rating" | "reviews" | "sold" | "status" | "submittedAt">,

@@ -35,6 +35,7 @@ export default function CheckoutPage() {
   const [confirmedOrderId, setConfirmedOrderId] = useState("");
   const [form, setForm] = useState({ name: "", phone: "", address: "", city: "Thanh Hóa", commune: "", note: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [orderError, setOrderError] = useState("");
 
   // Pre-fill form when user data becomes available
   useEffect(() => {
@@ -131,33 +132,43 @@ export default function CheckoutPage() {
 
   async function handlePlaceOrder() {
     setLoading(true);
-    const result = await createOrderAction({
-      shippingName: form.name,
-      shippingPhone: form.phone,
-      shippingAddress: [form.address, form.commune, form.city].filter(Boolean).join(", "),
-      note: form.note || undefined,
-      totalPrice,
-      shippingFee,
-      grandTotal,
-      paymentMethod,
-      items: items.map(({ product, quantity }) => ({
-        productId: product.id,
-        productName: product.name,
-        productPrice: product.price,
-        productUnit: product.unit,
-        productIcon: product.icon,
-        productImageUrl: product.images?.[0] ?? product.imageUrl,
-        quantity,
-        subtotal: product.price * quantity,
-      })),
-    });
+    setOrderError("");
+    try {
+      const result = await createOrderAction({
+        shippingName: form.name,
+        shippingPhone: form.phone,
+        shippingAddress: [form.address, form.commune, form.city].filter(Boolean).join(", "),
+        note: form.note || undefined,
+        totalPrice,
+        shippingFee,
+        grandTotal,
+        paymentMethod,
+        items: items.map(({ product, quantity }) => ({
+          productId: product.id,
+          productName: product.name,
+          productPrice: product.price,
+          productUnit: product.unit,
+          productIcon: product.icon,
+          productImageUrl: product.images?.[0] ?? product.imageUrl,
+          quantity,
+          subtotal: product.price * quantity,
+        })),
+      });
 
-    if (!result.ok || !result.orderId) { setLoading(false); return; }
+      if (!result.ok || !result.orderId) {
+        setOrderError(result.error ?? "Đặt hàng thất bại. Vui lòng thử lại.");
+        setLoading(false);
+        return;
+      }
 
-    clearCart();
-    setConfirmedOrderId(result.orderId);
-    setLoading(false);
-    setStep("success");
+      clearCart();
+      setConfirmedOrderId(result.orderId);
+      setStep("success");
+    } catch {
+      setOrderError("Không thể kết nối máy chủ. Vui lòng kiểm tra kết nối và thử lại.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   if (step === "success") {
@@ -454,6 +465,15 @@ export default function CheckoutPage() {
                     <>🛒 Đặt hàng – {formatPrice(grandTotal)}</>
                   )}
                 </button>
+
+                {orderError && (
+                  <div className="mt-3 flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+                    <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-.75-11.25a.75.75 0 011.5 0v4.5a.75.75 0 01-1.5 0v-4.5zm.75 7.5a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd"/>
+                    </svg>
+                    <span>{orderError}</span>
+                  </div>
+                )}
               </div>
             )}
           </div>
