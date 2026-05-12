@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { sendOrderNotificationEmail } from "@/lib/email";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 
 function getAdminClient() {
@@ -181,6 +182,20 @@ export async function createOrderAction(input: CreateOrderInput): Promise<{ ok: 
     await supabase.from("orders").delete().eq("id", order.id);
     return { ok: false, error: itemsError.message };
   }
+
+  // Fire-and-forget — email failure must not block the order response
+  sendOrderNotificationEmail({
+    orderId: order.id as string,
+    shippingName: input.shippingName,
+    shippingPhone: input.shippingPhone,
+    shippingAddress: input.shippingAddress,
+    note: input.note,
+    paymentMethod: input.paymentMethod,
+    totalPrice: input.totalPrice,
+    shippingFee: input.shippingFee,
+    grandTotal: input.grandTotal,
+    items: input.items,
+  }).catch(() => {});
 
   return { ok: true, orderId: order.id as string };
 }
