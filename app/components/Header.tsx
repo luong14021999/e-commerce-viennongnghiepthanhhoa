@@ -250,11 +250,11 @@ export default function Header() {
           </div>
 
           {/* Right actions */}
-          <div className="flex items-center gap-2 ml-auto sm:ml-0 flex-shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 ml-auto sm:ml-0 flex-shrink-0">
             {/* Cart */}
             <Link
               href="/gio-hang"
-              className="relative flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 transition-colors group"
+              className="relative flex flex-col items-center p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors group"
               aria-label="Giỏ hàng"
             >
               <div id="cart-icon" className="relative">
@@ -275,7 +275,7 @@ export default function Header() {
               <div ref={notifRef} className="relative">
                 <button
                   onClick={() => setNotifOpen(!notifOpen)}
-                  className="relative flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 transition-colors group"
+                  className="relative flex flex-col items-center p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors group"
                   aria-label={`${pendingCount} sản phẩm chờ duyệt`}
                   title={pendingCount > 0 ? `${pendingCount} sản phẩm chờ duyệt` : 'Không có sản phẩm chờ duyệt'}
                 >
@@ -350,7 +350,7 @@ export default function Header() {
               <div className="relative">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border transition-colors ${
+                  className={`flex items-center gap-1.5 sm:gap-2 px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-xl border transition-colors ${
                     user.role === 'admin'
                       ? 'bg-gray-800 border-gray-700 hover:bg-gray-700'
                       : user.role === 'business'
@@ -364,7 +364,7 @@ export default function Header() {
                   }`}>
                     {user.name[0].toUpperCase()}
                   </div>
-                  {/* Name + role — desktop */}
+                  {/* Name + role — desktop only */}
                   <div className="hidden sm:block text-left leading-tight">
                     <p className={`text-xs font-bold max-w-24 truncate ${user.role === 'admin' ? 'text-white' : 'text-gray-800'}`}>
                       {user.name.split(' ').pop()}
@@ -373,8 +373,8 @@ export default function Header() {
                       {user.role === 'buyer' ? 'Người mua' : user.role === 'business' ? 'Doanh nghiệp' : 'Quản trị viên'}
                     </p>
                   </div>
-                  {/* Chevron */}
-                  <svg className={`w-3.5 h-3.5 flex-shrink-0 transition-transform ${userMenuOpen ? 'rotate-180' : ''} ${user.role === 'admin' ? 'text-gray-400' : 'text-gray-400'}`}
+                  {/* Chevron — desktop only */}
+                  <svg className={`hidden sm:block w-3.5 h-3.5 flex-shrink-0 transition-transform ${userMenuOpen ? 'rotate-180' : ''} ${user.role === 'admin' ? 'text-gray-400' : 'text-gray-400'}`}
                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/>
                   </svg>
