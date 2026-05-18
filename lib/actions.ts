@@ -464,6 +464,18 @@ export async function setUserBannedAction(userId: string, banned: boolean): Prom
   }
 }
 
+export async function checkBanStatusAction(userId: string): Promise<{ banned: boolean }> {
+  try {
+    const admin = getAdminClient();
+    const { data } = await admin.auth.admin.getUserById(userId);
+    const bannedUntil = (data.user as unknown as { banned_until?: string })?.banned_until;
+    const banned = bannedUntil ? new Date(bannedUntil) > new Date() : false;
+    return { banned };
+  } catch {
+    return { banned: false };
+  }
+}
+
 export async function notifyProductSubmittedAction(input: {
   productName: string;
   categoryId: string;

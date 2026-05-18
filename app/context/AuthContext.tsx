@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { registerUserAction, insertBusinessProfileAction, updateBusinessProfileAction, updateBuyerProfileAction, updatePhoneAction } from '@/lib/actions';
+import { registerUserAction, insertBusinessProfileAction, updateBusinessProfileAction, updateBuyerProfileAction, updatePhoneAction, checkBanStatusAction } from '@/lib/actions';
 
 export type UserRole = 'buyer' | 'business' | 'admin';
 
@@ -116,11 +116,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'INITIAL_SESSION') {
         setIsLoading(false);
       }
       if (session?.user) {
+        const { banned } = await checkBanStatusAction(session.user.id);
+        if (banned) {
+          supabase.auth.signOut();
+          setUser(null);
+          return;
+        }
         fetchProfile(session.user.id).then((profile) => setUser(profile));
       } else {
         setUser(null);
@@ -133,12 +139,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function login(phone: string, password: string) {
     const supabase = createClient();
     const email = `${phone}@vnn.vn`;
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      return {
-        ok: false,
-        error: error.message ?? 'Số điện thoại hoặc mật khẩu không đúng',
-      };
+      const msg = (error.message ?? '').toLowerCase();
+      if (msg.includes('banned') || msg.includes('ban')) {
+        return { ok: false, error: 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.' };
+      }
+      return { ok: false, error: 'Số điện thoại hoặc mật khẩu không đúng' };
+    }
+    // Double-check ban status in case Supabase didn't catch it
+    if (data.user) {
+      const { banned } = await checkBanStatusAction(data.user.id);
+      if (banned) {
+        await supabase.auth.signOut();
+        return { ok: false, error: 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.' };
+      }
     }
     // onAuthStateChange handles setting user state
     return { ok: true };
