@@ -84,10 +84,10 @@ export default async function HomePage() {
 
   const profileMap = new Map((profileData ?? []).map((p) => [p.id, p]));
 
-  // Fetch real review data from reviews table (not cached product columns)
-  const bizProductIds = businessProducts.map((p) => p.id);
-  const { data: reviewsData } = bizProductIds.length > 0
-    ? await supabase.from("reviews").select("product_id, rating").in("product_id", bizProductIds)
+  // Fetch real review data for all products (used for featured sort + business ratings)
+  const allProductIds = allProducts.map((p) => p.id);
+  const { data: reviewsData } = allProductIds.length > 0
+    ? await supabase.from("reviews").select("product_id, rating").in("product_id", allProductIds)
     : { data: [] };
 
   const reviewsMap = new Map<string, { sum: number; count: number }>();
@@ -97,6 +97,17 @@ export default async function HomePage() {
     cur.count += 1;
     reviewsMap.set(row.product_id, cur);
   }
+
+  const featuredProducts = [...allProducts]
+    .sort((a, b) => {
+      const ra = reviewsMap.get(a.id);
+      const rb = reviewsMap.get(b.id);
+      const avgA = ra && ra.count > 0 ? ra.sum / ra.count : 0;
+      const avgB = rb && rb.count > 0 ? rb.sum / rb.count : 0;
+      if (avgB !== avgA) return avgB - avgA;
+      return b.sold - a.sold;
+    })
+    .slice(0, 8);
 
   const businesses: HomepageBusiness[] = sellerIds.map((sellerId) => {
     const bizProds = businessProducts.filter((p) => p.sellerId === sellerId);
@@ -189,7 +200,7 @@ export default async function HomePage() {
               <Link href="/san-pham" className="text-sm text-green-700 font-semibold hover:text-green-600">Xem tất cả →</Link>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {allProducts.slice(0, 8).map((p) => (
+              {featuredProducts.map((p) => (
                 <ProductCard key={p.id} product={p} />
               ))}
             </div>

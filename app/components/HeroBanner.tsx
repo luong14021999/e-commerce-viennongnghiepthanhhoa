@@ -17,7 +17,7 @@ const banners = [
     title: "Tư vấn & Chuyển giao Công nghệ",
     subtitle: "Hỗ trợ kỹ thuật nông nghiệp toàn diện",
     desc: "Đội ngũ chuyên gia giàu kinh nghiệm sẵn sàng hỗ trợ bà con nông dân",
-    href: "/san-pham?category=tu-van",
+    href: "/san-pham?category=dich-vu-chuyen-giao",
     cta: "Xem dịch vụ",
     bg: "from-teal-800 to-teal-600",
   },

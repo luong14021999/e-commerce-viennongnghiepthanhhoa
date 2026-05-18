@@ -3,11 +3,11 @@ import type { Category } from "./data";
 export const SITE_CATEGORIES: Category[] = [
   { id: "tat-ca",           label: "Tất cả",                              icon: "🛒", type: "all" },
   { id: "ocop",             label: "Sản phẩm OCOP",                       icon: "🏅", type: "product" },
+  { id: "san-pham-vien",    label: "Sản phẩm Viện Nông Nghiệp",           icon: "🌿", type: "product" },
   { id: "giong-cay-trong",  label: "Giống cây trồng",                     icon: "🌾", type: "product" },
   { id: "giong-vat-nuoi",   label: "Giống vật nuôi – thủy sản",           icon: "🐄", type: "product" },
   { id: "nong-san-tuoi",    label: "Nông sản tươi",                       icon: "🥦", type: "product" },
   { id: "san-pham-chan-nuoi", label: "Sản phẩm chăn nuôi – thủy sản",    icon: "🥩", type: "product" },
-  { id: "san-pham-vien",    label: "Sản phẩm Viện Nông Nghiệp",           icon: "🌿", type: "product" },
   { id: "vat-tu-che-pham",  label: "Vật tư – chế phẩm nông nghiệp",      icon: "🧪", type: "product" },
   { id: "may-moc-thiet-bi", label: "Máy móc – thiết bị nông nghiệp",     icon: "⚙️", type: "product" },
   { id: "lam-nghiep",       label: "Lâm nghiệp – cây công trình",         icon: "🌲", type: "product" },
