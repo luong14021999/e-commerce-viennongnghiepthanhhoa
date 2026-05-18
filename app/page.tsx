@@ -84,15 +84,29 @@ export default async function HomePage() {
 
   const profileMap = new Map((profileData ?? []).map((p) => [p.id, p]));
 
+  // Fetch real review data from reviews table (not cached product columns)
+  const bizProductIds = businessProducts.map((p) => p.id);
+  const { data: reviewsData } = bizProductIds.length > 0
+    ? await supabase.from("reviews").select("product_id, rating").in("product_id", bizProductIds)
+    : { data: [] };
+
+  const reviewsMap = new Map<string, { sum: number; count: number }>();
+  for (const row of (reviewsData ?? [])) {
+    const cur = reviewsMap.get(row.product_id) ?? { sum: 0, count: 0 };
+    cur.sum += row.rating;
+    cur.count += 1;
+    reviewsMap.set(row.product_id, cur);
+  }
+
   const businesses: HomepageBusiness[] = sellerIds.map((sellerId) => {
     const bizProds = businessProducts.filter((p) => p.sellerId === sellerId);
     const bp = profileMap.get(sellerId);
     const desc = bp?.description ?? "";
     const accountTypeMatch = desc.match(/^\[([^\]]+)\]/);
     const accountType = accountTypeMatch ? accountTypeMatch[1] : undefined;
-    const totalReviews = bizProds.reduce((s, p) => s + (p.reviews ?? 0), 0);
+    const totalReviews = bizProds.reduce((s, p) => s + (reviewsMap.get(p.id)?.count ?? 0), 0);
     const avgRating = totalReviews > 0
-      ? bizProds.reduce((s, p) => s + (p.rating ?? 0) * (p.reviews ?? 0), 0) / totalReviews
+      ? bizProds.reduce((s, p) => s + (reviewsMap.get(p.id)?.sum ?? 0), 0) / totalReviews
       : 0;
     return {
       sellerId,

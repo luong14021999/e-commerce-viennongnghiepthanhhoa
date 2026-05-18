@@ -184,32 +184,34 @@ export default function ProductApprovalModal({
 
         {/* Action buttons */}
         {!rejectMode && (
-          <div className="px-5 py-4 border-t border-gray-100 flex gap-2 flex-wrap sticky bottom-0 bg-white">
+          <div className="px-5 py-4 border-t border-gray-100 flex flex-col sm:flex-row gap-2 sticky bottom-0 bg-white">
             <button
               onClick={handleApprove}
               disabled={loading}
-              className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors disabled:opacity-60"
+              className="flex items-center justify-center gap-1.5 bg-green-600 hover:bg-green-700 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors disabled:opacity-60 w-full sm:w-auto"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               Duyệt sản phẩm
             </button>
-            <button
-              onClick={() => setRejectMode('request-edit')}
-              className="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold text-sm px-4 py-2.5 rounded-xl border border-amber-200 transition-colors"
-            >
-              ✏️ Yêu cầu chỉnh sửa
-            </button>
-            <button
-              onClick={() => setRejectMode('reject')}
-              className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-700 font-semibold text-sm px-4 py-2.5 rounded-xl border border-red-200 transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              Từ chối
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setRejectMode('request-edit')}
+                className="flex-1 flex items-center justify-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold text-sm px-4 py-2.5 rounded-xl border border-amber-200 transition-colors"
+              >
+                ✏️ Chỉnh sửa
+              </button>
+              <button
+                onClick={() => setRejectMode('reject')}
+                className="flex-1 flex items-center justify-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-700 font-semibold text-sm px-4 py-2.5 rounded-xl border border-red-200 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Từ chối
+              </button>
+            </div>
           </div>
         )}
       </div>

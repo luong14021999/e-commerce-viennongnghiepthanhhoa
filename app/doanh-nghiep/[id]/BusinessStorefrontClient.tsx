@@ -14,6 +14,31 @@ type Props = {
   sellerId: string;
 };
 
+function StarRating({ rating, size = "sm" }: { rating: number; size?: "sm" | "xs" }) {
+  const starSize = size === "xs" ? "w-3 h-3" : "w-4 h-4";
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((s) => {
+        const fill = Math.min(1, Math.max(0, rating - (s - 1)));
+        return (
+          <svg key={s} className={starSize} viewBox="0 0 20 20">
+            <defs>
+              <linearGradient id={`star-${s}-${rating.toFixed(1)}`}>
+                <stop offset={`${fill * 100}%`} stopColor="#f59e0b" />
+                <stop offset={`${fill * 100}%`} stopColor="#d1d5db" />
+              </linearGradient>
+            </defs>
+            <path
+              fill={`url(#star-${s}-${rating.toFixed(1)})`}
+              d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+            />
+          </svg>
+        );
+      })}
+    </div>
+  );
+}
+
 function InfoRow({ icon, label, value, href }: { icon: string; label: string; value: string; href?: string }) {
   return (
     <div className="flex items-start gap-3 py-2.5 border-b border-gray-100 last:border-0">
@@ -61,6 +86,14 @@ export default function BusinessStorefrontClient({ products, profile, sellerId }
     if (activeCategory === "tat-ca") return products;
     return products.filter((p) => p.category === activeCategory);
   }, [products, activeCategory]);
+
+  const { avgRating, totalReviews } = useMemo(() => {
+    const rated = products.filter((p) => p.reviews > 0);
+    if (rated.length === 0) return { avgRating: null, totalReviews: 0 };
+    const sumReviews = rated.reduce((s, p) => s + p.reviews, 0);
+    const weighted = rated.reduce((s, p) => s + p.rating * p.reviews, 0);
+    return { avgRating: weighted / sumReviews, totalReviews: sumReviews };
+  }, [products]);
 
   if (!profile && products.length === 0) {
     return (
@@ -128,16 +161,28 @@ export default function BusinessStorefrontClient({ products, profile, sellerId }
                   <div className="text-xl font-bold">{products.length}</div>
                   <div className="text-green-300 text-xs">Sản phẩm</div>
                 </div>
-                <div className="w-px h-8 bg-green-600" />
+                <div className="hidden sm:block w-px h-8 bg-green-600" />
                 <div className="text-center">
                   <div className="text-xl font-bold">
                     {products.reduce((s, p) => s + p.sold, 0).toLocaleString()}
                   </div>
                   <div className="text-green-300 text-xs">Đã bán</div>
                 </div>
+                {avgRating !== null && (
+                  <>
+                    <div className="hidden sm:block w-px h-8 bg-green-600" />
+                    <div className="text-center">
+                      <div className="flex items-center gap-1.5 justify-center">
+                        <span className="text-xl font-bold">{avgRating.toFixed(1)}</span>
+                        <StarRating rating={avgRating} size="sm" />
+                      </div>
+                      <div className="text-green-300 text-xs">{totalReviews.toLocaleString()} đánh giá</div>
+                    </div>
+                  </>
+                )}
                 {profile?.phone && (
                   <>
-                    <div className="w-px h-8 bg-green-600" />
+                    <div className="hidden sm:block w-px h-8 bg-green-600" />
                     <a href={`tel:${profile.phone}`} className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-2 rounded-full text-sm font-semibold transition-colors">
                       📞 {profile.phone}
                     </a>
@@ -180,6 +225,19 @@ export default function BusinessStorefrontClient({ products, profile, sellerId }
                     <InfoRow icon="✉️" label="Email" value={profile.email} href={`mailto:${profile.email}`} />
                   )}
                 </div>
+
+                {avgRating !== null && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <p className="text-xs text-gray-500 font-medium mb-2">Đánh giá gian hàng</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl font-bold text-amber-500">{avgRating.toFixed(1)}</span>
+                      <div>
+                        <StarRating rating={avgRating} size="sm" />
+                        <p className="text-xs text-gray-400 mt-0.5">{totalReviews.toLocaleString()} lượt đánh giá</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {cleanDescription && (
                   <div className="mt-4 pt-4 border-t border-gray-100">
