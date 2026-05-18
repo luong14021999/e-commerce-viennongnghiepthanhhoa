@@ -31,6 +31,7 @@ export default function AddProductPage() {
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+  const [contactPrice, setContactPrice] = useState(false);
   const [form, setForm] = useState<FormState>({
     name: "", category: "", price: "", originalPrice: "", unit: "kg",
     tag: "", desc: "", spec1: "", spec2: "", spec3: "", spec4: "", certifications: "",
@@ -71,7 +72,7 @@ export default function AddProductPage() {
     const errs: Partial<FormState> = {};
     if (!form.name.trim()) errs.name = "Bắt buộc";
     if (!form.category) errs.category = "Bắt buộc";
-    if (!form.price || isNaN(Number(form.price)) || Number(form.price) <= 0) errs.price = "Giá không hợp lệ";
+    if (!contactPrice && (!form.price || isNaN(Number(form.price)) || Number(form.price) <= 0)) errs.price = "Giá không hợp lệ";
     if (!form.unit.trim()) errs.unit = "Bắt buộc";
     if (!form.desc.trim()) errs.desc = "Bắt buộc";
     setErrors(errs);
@@ -85,7 +86,7 @@ export default function AddProductPage() {
     setSubmitting(true);
     setSubmitError("");
 
-    const price = Number(form.price);
+    const price = contactPrice ? 0 : Number(form.price);
     const originalPrice = form.originalPrice ? Number(form.originalPrice) : price;
     const specs = [form.spec1, form.spec2, form.spec3, form.spec4].filter(Boolean);
     const certs = form.certifications.split(",").map((s) => s.trim()).filter(Boolean);
@@ -103,10 +104,10 @@ export default function AddProductPage() {
         tagColor: form.tag ? "bg-green-600 text-white" : undefined,
         desc: form.desc,
         specs: specs.length ? specs : [`Đơn vị: ${form.unit}`, `Giá: ${price.toLocaleString("vi-VN")}đ/${form.unit}`],
-        origin: user.business?.businessName ?? user.name,
+        origin: user.business?.businessName || user.name,
         certifications: certs.length ? certs : ["Đang cập nhật"],
         sellerId: user.id,
-        sellerName: user.business?.businessName ?? user.name,
+        sellerName: user.business?.businessName || "Doanh nghiệp",
       },
       "pending",
       imageFiles
@@ -201,28 +202,56 @@ export default function AddProductPage() {
           {/* Pricing */}
           <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
             <h2 className="font-bold text-gray-900 flex items-center gap-2"><span>💰</span> Giá bán</h2>
-            <div className="grid sm:grid-cols-3 gap-4">
+
+            {/* Toggle Liên hệ */}
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={() => setContactPrice((v) => !v)}
+                className={`w-11 h-6 rounded-full flex items-center px-0.5 transition-colors ${contactPrice ? "bg-green-600" : "bg-gray-300"}`}>
+                <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${contactPrice ? "translate-x-5" : "translate-x-0"}`} />
+              </button>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Giá bán (đ) <span className="text-red-500">*</span></label>
-                <input type="number" value={form.price} onChange={(e) => setField("price", e.target.value)}
-                  placeholder="45000" min={0}
-                  className={`w-full px-4 py-2.5 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.price ? "border-red-400" : "border-gray-300"}`}/>
-                {errors.price && <p className="text-xs text-red-500 mt-1">{errors.price}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Giá gốc (đ) <span className="text-gray-400 font-normal">(để hiện giảm giá)</span></label>
-                <input type="number" value={form.originalPrice} onChange={(e) => setField("originalPrice", e.target.value)}
-                  placeholder="52000" min={0}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-green-500"/>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Đơn vị <span className="text-red-500">*</span></label>
-                <input type="text" value={form.unit} onChange={(e) => setField("unit", e.target.value)}
-                  placeholder="kg, lít, bao, hộp..."
-                  className={`w-full px-4 py-2.5 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.unit ? "border-red-400" : "border-gray-300"}`}/>
-                {errors.unit && <p className="text-xs text-red-500 mt-1">{errors.unit}</p>}
+                <p className="text-sm font-semibold text-gray-700">Liên hệ để biết giá</p>
+                <p className="text-xs text-gray-400">Bật nếu chưa muốn công khai giá cụ thể</p>
               </div>
             </div>
+
+            {contactPrice ? (
+              <>
+                <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-800 font-medium flex items-center gap-2">
+                  <span>ℹ️</span> Sản phẩm sẽ hiển thị trạng thái "Liên hệ để biết giá" với khách hàng
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Đơn vị <span className="text-red-500">*</span></label>
+                  <input type="text" value={form.unit} onChange={(e) => setField("unit", e.target.value)}
+                    placeholder="kg, lít, bao, hộp..."
+                    className={`w-full px-4 py-2.5 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.unit ? "border-red-400" : "border-gray-300"}`}/>
+                  {errors.unit && <p className="text-xs text-red-500 mt-1">{errors.unit}</p>}
+                </div>
+              </>
+            ) : (
+              <div className="grid sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Giá bán (đ) <span className="text-red-500">*</span></label>
+                  <input type="number" value={form.price} onChange={(e) => setField("price", e.target.value)}
+                    placeholder="45000" min={0}
+                    className={`w-full px-4 py-2.5 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.price ? "border-red-400" : "border-gray-300"}`}/>
+                  {errors.price && <p className="text-xs text-red-500 mt-1">{errors.price}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Giá gốc (đ) <span className="text-gray-400 font-normal">(để hiện giảm giá)</span></label>
+                  <input type="number" value={form.originalPrice} onChange={(e) => setField("originalPrice", e.target.value)}
+                    placeholder="52000" min={0}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-green-500"/>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Đơn vị <span className="text-red-500">*</span></label>
+                  <input type="text" value={form.unit} onChange={(e) => setField("unit", e.target.value)}
+                    placeholder="kg, lít, bao, hộp..."
+                    className={`w-full px-4 py-2.5 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.unit ? "border-red-400" : "border-gray-300"}`}/>
+                  {errors.unit && <p className="text-xs text-red-500 mt-1">{errors.unit}</p>}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Specs */}

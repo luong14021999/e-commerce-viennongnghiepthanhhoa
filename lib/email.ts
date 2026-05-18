@@ -135,6 +135,65 @@ function buildHtml(d: OrderEmailData): string {
 </html>`;
 }
 
+export type ProductSubmissionEmailData = {
+  productName: string;
+  category: string;
+  price: number;
+  unit: string;
+  sellerName: string;
+  sellerPhone?: string;
+};
+
+function buildProductSubmissionHtml(d: ProductSubmissionEmailData): string {
+  const priceLabel = d.price === 0
+    ? '<span style="color:#16a34a;font-weight:700">Liên hệ để biết giá</span>'
+    : `<strong>${d.price.toLocaleString("vi-VN")}đ/${d.unit}</strong>`;
+
+  return `<!DOCTYPE html>
+<html lang="vi">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;font-size:14px;color:#333">
+  <div style="max-width:580px;margin:24px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
+    <div style="background:linear-gradient(135deg,#1e40af,#1d4ed8);padding:28px 32px">
+      <p style="margin:0 0 4px;color:#bfdbfe;font-size:12px;letter-spacing:1px;text-transform:uppercase">Viện Nông Nghiệp Thanh Hóa</p>
+      <h1 style="margin:0;color:#fff;font-size:20px;font-weight:700">📦 Sản phẩm mới chờ duyệt</h1>
+    </div>
+    <div style="padding:28px 32px">
+      <p style="margin:0 0 20px;color:#555">Một doanh nghiệp vừa gửi sản phẩm mới. Vui lòng kiểm tra và phê duyệt.</p>
+      <table style="width:100%;border-collapse:collapse">
+        <tr><td style="padding:8px 0;color:#666;width:140px">Tên sản phẩm</td><td style="padding:8px 0;font-weight:700;color:#111">${d.productName}</td></tr>
+        <tr style="background:#f9fafb"><td style="padding:8px 0;color:#666">Danh mục</td><td style="padding:8px 0">${d.category}</td></tr>
+        <tr><td style="padding:8px 0;color:#666">Giá bán</td><td style="padding:8px 0">${priceLabel}</td></tr>
+        <tr style="background:#f9fafb"><td style="padding:8px 0;color:#666">Doanh nghiệp</td><td style="padding:8px 0;font-weight:600">${d.sellerName}</td></tr>
+        ${d.sellerPhone ? `<tr><td style="padding:8px 0;color:#666">Số điện thoại</td><td style="padding:8px 0"><a href="tel:${d.sellerPhone}" style="color:#1d4ed8">${d.sellerPhone}</a></td></tr>` : ""}
+      </table>
+      <div style="margin-top:24px;text-align:center">
+        <a href="${process.env.NEXT_PUBLIC_SITE_URL ?? "https://localhost:3000"}/admin"
+          style="display:inline-block;background:#1d4ed8;color:#fff;font-weight:700;padding:12px 28px;border-radius:8px;text-decoration:none;font-size:14px">
+          Vào trang Admin để duyệt →
+        </a>
+      </div>
+    </div>
+    <div style="padding:16px 32px;text-align:center;color:#9ca3af;font-size:12px;border-top:1px solid #f0f0f0">
+      Email tự động từ hệ thống Viện Nông Nghiệp Thanh Hóa. Vui lòng không trả lời email này.
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+export async function sendProductSubmissionEmail(data: ProductSubmissionEmailData): Promise<void> {
+  const instituteEmail = process.env.INSTITUTE_EMAIL;
+  if (!instituteEmail || !process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) return;
+
+  await transporter.sendMail({
+    from: `"Viện Nông Nghiệp Thanh Hóa" <${process.env.GMAIL_USER}>`,
+    to: instituteEmail,
+    subject: `[Chờ duyệt] ${data.productName} — ${data.sellerName}`,
+    html: buildProductSubmissionHtml(data),
+  });
+}
+
 export async function sendOrderNotificationEmail(data: OrderEmailData): Promise<void> {
   const instituteEmail = process.env.INSTITUTE_EMAIL;
   if (!instituteEmail || !process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) return;

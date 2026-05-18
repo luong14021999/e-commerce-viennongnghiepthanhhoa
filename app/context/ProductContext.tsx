@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { uploadProductImages } from "@/lib/storage";
+import { notifyProductSubmittedAction } from "@/lib/actions";
 import type { Product, ProductStatus } from "@/app/lib/data";
 import { useAuth } from "@/app/context/AuthContext";
 
@@ -15,6 +16,7 @@ export type SellerProfile = {
   verified: boolean;
   phone?: string;
   email?: string;
+  contactName?: string;
 };
 
 type ProductContextValue = {
@@ -191,6 +193,18 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     }
 
     await loadProducts();
+
+    if (status === "pending" && data.sellerId) {
+      notifyProductSubmittedAction({
+        productName: data.name,
+        categoryId: data.category,
+        price: data.price,
+        unit: data.unit,
+        sellerId: data.sellerId,
+        sellerName: data.sellerName ?? "Doanh nghiệp",
+      });
+    }
+
     return { ok: true };
   }
 

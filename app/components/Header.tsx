@@ -6,7 +6,12 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useCart } from '@/app/context/CartContext';
 import { useAuth } from '@/app/context/AuthContext';
+import { useProducts } from '@/app/context/ProductContext';
 import { categories, formatPrice } from '@/app/lib/data';
+import type { Product } from '@/app/lib/data';
+import ProductApprovalModal from '@/app/components/ProductApprovalModal';
+
+const INSTITUTE_NAME = "Viện Nông Nghiệp Thanh Hóa";
 
 type Suggestion = {
   id: string;
@@ -24,32 +29,46 @@ export default function Header() {
   const router = useRouter();
   const { totalItems } = useCart();
   const { user, logout } = useAuth();
+  const { sellerProducts } = useProducts();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [approvalProduct, setApprovalProduct] = useState<Product | null>(null);
 
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [focusedIdx, setFocusedIdx] = useState(-1);
   const [loading, setLoading] = useState(false);
 
+  const pendingProducts = user?.role === 'admin'
+    ? sellerProducts.filter((p) => p.status === 'pending' && p.sellerName !== INSTITUTE_NAME)
+    : [];
+  const pendingCount = pendingProducts.length;
+
   const searchWrapperRef = useRef<HTMLDivElement>(null);
   const mobileSearchWrapperRef = useRef<HTMLDivElement>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => setMounted(true), []);
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
       const target = e.target as Node;
       if (
         searchWrapperRef.current?.contains(target) ||
         mobileSearchWrapperRef.current?.contains(target)
-      ) return;
+      ) {
+        if (!notifRef.current?.contains(target)) setNotifOpen(false);
+        return;
+      }
       setShowSuggestions(false);
       setFocusedIdx(-1);
+      if (!notifRef.current?.contains(target)) setNotifOpen(false);
     }
     document.addEventListener('mousedown', onClickOutside);
     return () => document.removeEventListener('mousedown', onClickOutside);
@@ -148,6 +167,7 @@ export default function Header() {
   );
 
   return (
+    <>
     <header className="bg-white shadow-sm sticky top-0 z-50">
       {/* Top bar */}
       <div className="bg-green-700 text-white text-xs">
@@ -249,6 +269,81 @@ export default function Header() {
               </div>
               <span className="text-xs text-gray-600 hidden sm:block">Giỏ hàng</span>
             </Link>
+
+            {/* Admin notification bell */}
+            {user?.role === 'admin' && (
+              <div ref={notifRef} className="relative">
+                <button
+                  onClick={() => setNotifOpen(!notifOpen)}
+                  className="relative flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 transition-colors group"
+                  aria-label={`${pendingCount} sản phẩm chờ duyệt`}
+                  title={pendingCount > 0 ? `${pendingCount} sản phẩm chờ duyệt` : 'Không có sản phẩm chờ duyệt'}
+                >
+                  <div className="relative">
+                    <svg className={`w-6 h-6 transition-colors ${notifOpen ? 'text-amber-600' : 'text-gray-700 group-hover:text-amber-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                    {mounted && pendingCount > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                        {pendingCount > 9 ? '9+' : pendingCount}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-xs text-gray-600 hidden sm:block">Duyệt SP</span>
+                </button>
+
+                {notifOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between bg-amber-50">
+                      <span className="font-semibold text-gray-800 text-sm">Sản phẩm chờ duyệt</span>
+                      {pendingCount > 0 && (
+                        <span className="text-xs bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full">{pendingCount}</span>
+                      )}
+                    </div>
+                    {pendingProducts.length === 0 ? (
+                      <div className="px-4 py-8 text-center text-sm text-gray-400">
+                        <svg className="w-10 h-10 mx-auto mb-2 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                        Không có sản phẩm nào chờ duyệt
+                      </div>
+                    ) : (
+                      <div className="max-h-72 overflow-y-auto">
+                        {pendingProducts.slice(0, 10).map(p => (
+                          <button
+                            key={p.id}
+                            onClick={() => { setApprovalProduct(p); setNotifOpen(false); }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-amber-50 transition-colors text-left"
+                          >
+                            <div className={`${p.bg} w-9 h-9 rounded-lg flex items-center justify-center text-base flex-shrink-0 relative overflow-hidden`}>
+                              {p.imageUrl
+                                ? <Image src={p.imageUrl} alt={p.name} fill className="object-cover" sizes="36px" />
+                                : <span>{p.icon}</span>
+                              }
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-800 truncate">{p.name}</p>
+                              <p className="text-xs text-gray-400 truncate">{p.sellerName} · Chờ duyệt</p>
+                            </div>
+                            <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <Link
+                      href="/admin"
+                      onClick={() => setNotifOpen(false)}
+                      className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-gray-50 text-sm text-gray-600 hover:bg-amber-50 hover:text-amber-700 border-t border-gray-100 transition-colors"
+                    >
+                      Xem tất cả trong bảng quản trị
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* User / Login */}
             {user ? (
@@ -445,5 +540,13 @@ export default function Header() {
         </div>
       )}
     </header>
+
+    {approvalProduct && (
+      <ProductApprovalModal
+        product={approvalProduct}
+        onClose={() => setApprovalProduct(null)}
+      />
+    )}
+  </>
   );
 }

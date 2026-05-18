@@ -86,6 +86,7 @@ export default async function BusinessStorefrontPage({ params }: Props) {
         verified: bp.verified ?? false,
         phone: profileRow?.phone ?? undefined,
         email: profileRow?.email ?? undefined,
+        contactName: profileRow?.name ?? undefined,
       }
     : null;
 

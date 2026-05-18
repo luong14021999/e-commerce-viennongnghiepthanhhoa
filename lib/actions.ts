@@ -1,7 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { sendOrderNotificationEmail } from "@/lib/email";
+import { sendOrderNotificationEmail, sendProductSubmissionEmail } from "@/lib/email";
+import { SITE_CATEGORIES } from "@/app/lib/categories";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 
 function getAdminClient() {
@@ -460,5 +461,37 @@ export async function setUserBannedAction(userId: string, banned: boolean): Prom
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Lỗi hệ thống" };
+  }
+}
+
+export async function notifyProductSubmittedAction(input: {
+  productName: string;
+  categoryId: string;
+  price: number;
+  unit: string;
+  sellerId: string;
+  sellerName: string;
+}): Promise<void> {
+  try {
+    const admin = getAdminClient();
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("phone")
+      .eq("id", input.sellerId)
+      .maybeSingle();
+
+    const categoryLabel =
+      SITE_CATEGORIES.find((c) => c.id === input.categoryId)?.label ?? input.categoryId;
+
+    await sendProductSubmissionEmail({
+      productName: input.productName,
+      category: categoryLabel,
+      price: input.price,
+      unit: input.unit,
+      sellerName: input.sellerName,
+      sellerPhone: profile?.phone ?? undefined,
+    });
+  } catch {
+    // fire-and-forget — never block the caller
   }
 }
