@@ -116,18 +116,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'INITIAL_SESSION') {
         setIsLoading(false);
       }
       if (session?.user) {
-        const { banned } = await checkBanStatusAction(session.user.id);
-        if (banned) {
-          supabase.auth.signOut();
-          setUser(null);
-          return;
-        }
-        fetchProfile(session.user.id).then((profile) => setUser(profile));
+        const userId = session.user.id;
+        // Set user immediately to avoid layout shift, then verify ban status
+        fetchProfile(userId).then((profile) => {
+          setUser(profile);
+          checkBanStatusAction(userId).then(({ banned }) => {
+            if (banned) {
+              createClient().auth.signOut();
+              setUser(null);
+            }
+          });
+        });
       } else {
         setUser(null);
       }
