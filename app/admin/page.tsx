@@ -32,7 +32,6 @@ export default function AdminPage() {
   const router = useRouter();
 
   const [section, setSection] = useState<Section>("institute");
-  const [tab, setTab] = useState<FilterTab>("all");
   const [selectedBiz, setSelectedBiz] = useState<string | null>(null);
   const [bizTab, setBizTab] = useState<FilterTab>("all");
   const [rejectId, setRejectId] = useState<string | null>(null);
@@ -76,7 +75,7 @@ export default function AdminPage() {
   const businessProducts  = sellerProducts.filter((p) => p.sellerName !== INSTITUTE_NAME);
 
   function applyFilters(list: Product[]) {
-    let out = tab === "all" ? list : list.filter(p => p.status === tab);
+    let out = list;
     if (searchQuery.trim()) {
       const q = removeAccents(searchQuery.toLowerCase());
       out = out.filter(p => removeAccents(p.name.toLowerCase()).includes(q));
@@ -88,10 +87,7 @@ export default function AdminPage() {
 
   const filteredInstitute = applyFilters(instituteProducts);
   const instituteCounts = {
-    all:      instituteProducts.length,
-    pending:  instituteProducts.filter((p) => p.status === "pending").length,
-    approved: instituteProducts.filter((p) => p.status === "approved").length,
-    rejected: instituteProducts.filter((p) => p.status === "rejected").length,
+    all: instituteProducts.length,
   };
 
   // Group business products by sellerId
@@ -130,16 +126,21 @@ export default function AdminPage() {
 
   function ProductActions({ p }: { p: Product }) {
     const hidden = isHidden(p);
+    const isInstitute = !p.sellerId || p.sellerName === INSTITUTE_NAME;
     return (
       <div className="flex gap-2 mt-4 flex-wrap">
         {p.status === "pending" && (<>
-          <button onClick={() => handleApprove(p.id)} className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white font-semibold text-sm px-4 py-2 rounded-xl transition-colors">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
-            Phê duyệt
-          </button>
-          <button onClick={() => openReject(p.id, "request-edit")} className="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold text-sm px-4 py-2 rounded-xl border border-amber-200 transition-colors">
-            ✏️ Yêu cầu chỉnh sửa
-          </button>
+          {!isInstitute && (
+            <button onClick={() => handleApprove(p.id)} className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white font-semibold text-sm px-4 py-2 rounded-xl transition-colors">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
+              Phê duyệt
+            </button>
+          )}
+          {!isInstitute && (
+            <button onClick={() => openReject(p.id, "request-edit")} className="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold text-sm px-4 py-2 rounded-xl border border-amber-200 transition-colors">
+              ✏️ Yêu cầu chỉnh sửa
+            </button>
+          )}
           <button onClick={() => openReject(p.id, "reject")} className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-700 font-semibold text-sm px-4 py-2 rounded-xl border border-red-200 transition-colors">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
             Từ chối
@@ -149,9 +150,11 @@ export default function AdminPage() {
           <button onClick={() => openReject(p.id, "hide")} className="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-sm px-4 py-2 rounded-xl border border-gray-200 transition-colors">
             🙈 Ẩn sản phẩm
           </button>
-          <button onClick={() => openReject(p.id, "request-edit")} className="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold text-sm px-4 py-2 rounded-xl border border-amber-200 transition-colors">
-            ✏️ Yêu cầu chỉnh sửa
-          </button>
+          {!isInstitute && (
+            <button onClick={() => openReject(p.id, "request-edit")} className="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold text-sm px-4 py-2 rounded-xl border border-amber-200 transition-colors">
+              ✏️ Yêu cầu chỉnh sửa
+            </button>
+          )}
         </>)}
         {p.status === "rejected" && (
           hidden
@@ -176,6 +179,7 @@ export default function AdminPage() {
 
   function ProductCard({ p }: { p: Product }) {
     const hidden = isHidden(p);
+    const isInstitute = !p.sellerId || p.sellerName === INSTITUTE_NAME;
     const { score, missing } = completeness(p);
     const catLabel = SITE_CATEGORIES.find(c => c.id === p.category)?.label ?? p.category;
     return (
@@ -198,15 +202,17 @@ export default function AdminPage() {
             <div className="flex flex-col items-end gap-1 text-xs flex-shrink-0">
               {hidden                          && <span className="bg-gray-200 text-gray-600 font-bold px-2.5 py-1 rounded-full">🙈 Đang ẩn</span>}
               {!hidden && p.status === "pending"  && <span className="bg-amber-100 text-amber-700 font-bold px-2.5 py-1 rounded-full">⏳ Chờ duyệt</span>}
-              {!hidden && p.status === "approved" && <span className="bg-green-100 text-green-700 font-bold px-2.5 py-1 rounded-full">✅ Đã duyệt</span>}
+              {!hidden && p.status === "approved" && !isInstitute && <span className="bg-green-100 text-green-700 font-bold px-2.5 py-1 rounded-full">✅ Đã duyệt</span>}
               {!hidden && p.status === "rejected" && <span className="bg-red-100 text-red-700 font-bold px-2.5 py-1 rounded-full">❌ Từ chối</span>}
               {/* Completeness bar */}
-              <div className="flex items-center gap-1.5 mt-1">
-                <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full ${score >= 85 ? "bg-green-500" : score >= 57 ? "bg-amber-400" : "bg-red-400"}`} style={{ width: `${score}%` }} />
+              {!isInstitute && (
+                <div className="flex items-center gap-1.5 mt-1">
+                  <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full ${score >= 85 ? "bg-green-500" : score >= 57 ? "bg-amber-400" : "bg-red-400"}`} style={{ width: `${score}%` }} />
+                  </div>
+                  <span className={`font-bold ${score >= 85 ? "text-green-600" : score >= 57 ? "text-amber-600" : "text-red-500"}`}>{score}%</span>
                 </div>
-                <span className={`font-bold ${score >= 85 ? "text-green-600" : score >= 57 ? "text-amber-600" : "text-red-500"}`}>{score}%</span>
-              </div>
+              )}
               <span className="text-gray-400">{p.submittedAt ? new Date(p.submittedAt).toLocaleDateString("vi-VN") : ""}</span>
             </div>
           </div>
@@ -289,19 +295,12 @@ export default function AdminPage() {
         {/* ── INSTITUTE SECTION ── */}
         {section === "institute" && (<>
           {/* Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-            {[
-              { label: "Tổng sản phẩm", value: instituteCounts.all,      icon: "📦", bg: "bg-blue-50  border-blue-200  text-blue-700"  },
-              { label: "Chờ duyệt",      value: instituteCounts.pending,  icon: "⏳", bg: "bg-amber-50 border-amber-200 text-amber-700" },
-              { label: "Đã duyệt",       value: instituteCounts.approved, icon: "✅", bg: "bg-green-50 border-green-200 text-green-700" },
-              { label: "Từ chối",        value: instituteCounts.rejected, icon: "❌", bg: "bg-red-50   border-red-200   text-red-700"   },
-            ].map((s) => (
-              <div key={s.label} className={`rounded-2xl border p-3 sm:p-5 ${s.bg}`}>
-                <div className="text-xl sm:text-2xl mb-1">{s.icon}</div>
-                <div className="text-2xl sm:text-3xl font-bold mb-0.5">{s.value}</div>
-                <div className="text-xs sm:text-sm font-medium">{s.label}</div>
-              </div>
-            ))}
+          <div className="mb-8">
+            <div className="rounded-2xl border p-3 sm:p-5 bg-blue-50 border-blue-200 text-blue-700 inline-block min-w-[200px]">
+              <div className="text-xl sm:text-2xl mb-1">📦</div>
+              <div className="text-2xl sm:text-3xl font-bold mb-0.5">{instituteCounts.all}</div>
+              <div className="text-xs sm:text-sm font-medium">Tổng sản phẩm</div>
+            </div>
           </div>
 
           {/* Search + filters */}
@@ -334,19 +333,6 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {/* Status tabs */}
-          <div className="flex gap-2 mb-5 flex-wrap">
-            {TAB_LABELS.map(({ key, label, color }) => (
-              <button key={key} onClick={() => setTab(key)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-colors ${tab === key ? `${color} text-white` : "bg-white border border-gray-200 text-gray-600 hover:border-gray-300"}`}>
-                {label}
-                <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${tab === key ? "bg-white/20" : "bg-gray-100"}`}>{instituteCounts[key]}</span>
-              </button>
-            ))}
-            {filteredInstitute.length !== (tab === "all" ? instituteCounts.all : instituteCounts[tab]) && (
-              <span className="text-xs text-gray-400 self-center ml-1">→ {filteredInstitute.length} kết quả</span>
-            )}
-          </div>
 
           {filteredInstitute.length === 0 ? (
             <div className="bg-white rounded-2xl border border-gray-200 py-16 text-center">
