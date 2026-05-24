@@ -46,11 +46,39 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("products")
-    .select("name, description")
+    .select("name, description, price, unit, seller_name, product_images(url, position)")
     .eq("id", id)
     .single();
+
   if (!data) return { title: "Chi tiết sản phẩm" };
-  return { title: data.name, description: data.description };
+
+  const firstImage = (data.product_images ?? [])
+    .sort((a: { position: number }, b: { position: number }) => a.position - b.position)
+    .map((img: { url: string }) => img.url)[0];
+
+  const description = (data.description ?? "").slice(0, 160) ||
+    `Mua ${data.name}${data.seller_name ? ` từ ${data.seller_name}` : ""} tại Viện Nông Nghiệp Thanh Hóa.`;
+
+  const canonical = `/san-pham/${id}`;
+
+  return {
+    title: data.name,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      type: "website",
+      title: data.name,
+      description,
+      url: canonical,
+      images: firstImage ? [{ url: firstImage, alt: data.name }] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: data.name,
+      description,
+      images: firstImage ? [firstImage] : undefined,
+    },
+  };
 }
 
 export default async function ProductPage({ params }: Props) {

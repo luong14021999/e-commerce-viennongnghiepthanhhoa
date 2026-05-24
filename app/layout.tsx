@@ -16,14 +16,47 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const SITE_NAME = "Viện Nông Nghiệp Thanh Hóa";
+const DEFAULT_DESCRIPTION =
+  "Mua giống cây trồng, phân bón, thuốc BVTV và đặc sản Thanh Hóa trực tuyến. Chất lượng kiểm định, giao hàng toàn tỉnh.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "Viện Nông Nghiệp Thanh Hóa – Cửa hàng trực tuyến",
-    template: "%s | Viện Nông Nghiệp Thanh Hóa",
+    default: `${SITE_NAME} – Cửa hàng trực tuyến`,
+    template: `%s | ${SITE_NAME}`,
   },
-  description:
-    "Mua giống cây trồng, phân bón, thuốc BVTV và đặc sản Thanh Hóa trực tuyến. Chất lượng kiểm định, giao hàng toàn tỉnh.",
-  keywords: ["nông nghiệp", "Thanh Hóa", "giống cây trồng", "phân bón", "lúa giống", "rau sạch", "đặc sản"],
+  description: DEFAULT_DESCRIPTION,
+  keywords: ["nông nghiệp", "Thanh Hóa", "giống cây trồng", "phân bón", "lúa giống", "rau sạch", "đặc sản", "OCOP", "Viện Nông Nghiệp"],
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    locale: "vi_VN",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} – Cửa hàng trực tuyến`,
+    description: DEFAULT_DESCRIPTION,
+    images: [
+      {
+        url: "/thanh_hoa_agriculture_logo.png",
+        width: 512,
+        height: 512,
+        alt: SITE_NAME,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SITE_NAME} – Cửa hàng trực tuyến`,
+    description: DEFAULT_DESCRIPTION,
+    images: ["/thanh_hoa_agriculture_logo.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
+  },
 };
 
 export const viewport = {
