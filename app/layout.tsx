@@ -5,6 +5,7 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 import FloatingContact from "./components/FloatingContact";
 import HomeBreadcrumb from "./components/HomeBreadcrumb";
+import RealtimeRefresher from "./components/RealtimeRefresher";
 import { CartProvider } from "./context/CartContext";
 import { CartFlyProvider } from "./components/CartFlyer";
 import { AuthProvider } from "./context/AuthContext";
@@ -80,6 +81,7 @@ export default function RootLayout({
             <ReviewStatsProvider>
               <CartProvider>
                 <CartFlyProvider>
+                  <RealtimeRefresher />
                   <Header />
                   <HomeBreadcrumb />
                   <main className="flex-1">{children}</main>

@@ -75,7 +75,26 @@ export default function AdminOrders() {
     setFetching(false);
   }, []);
 
-  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+  useEffect(() => {
+    fetchOrders();
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel("admin-orders-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "orders" },
+        () => fetchOrders(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "order_items" },
+        () => fetchOrders(),
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchOrders]);
 
   async function updateStatus(orderId: string, newStatus: string) {
     setUpdating(orderId);
