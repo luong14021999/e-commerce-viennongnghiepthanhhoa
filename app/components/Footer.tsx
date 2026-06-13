@@ -31,8 +31,8 @@ export default function Footer() {
             </p>
             <div className="space-y-1.5 text-sm">
               <p>
-                📍 số 271, đường Nguyễn Phục, phường Quảng Thắng, TP. Thanh Hóa,
-                tỉnh Thanh Hóa.
+                📍 Số 271, Đường Nguyễn Phục, Phường Đông Quang, Tỉnh Thanh Hóa,
+                Việt Nam
               </p>
               <p>
                 📞{' '}
@@ -142,6 +142,38 @@ export default function Footer() {
                   </span>
                 ))}
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Shipping carriers */}
+      <div className="border-t border-gray-800 bg-gray-900/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-2xl">🚚</span>
+              <div>
+                <p className="text-white font-semibold">Giao hàng toàn quốc</p>
+                <p className="text-xs text-gray-400">Hợp tác cùng các đơn vị vận chuyển uy tín</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {[
+                { label: "Giao Hàng Nhanh", short: "GHN" },
+                { label: "Giao Hàng Tiết Kiệm", short: "GHTK" },
+                { label: "Viettel Post", short: "Viettel Post" },
+                { label: "J&T Express", short: "J&T" },
+                { label: "VNPost", short: "VNPost" },
+              ].map((c) => (
+                <span
+                  key={c.short}
+                  title={c.label}
+                  className="bg-white text-gray-800 text-xs font-bold px-3 py-1.5 rounded-md shadow-sm"
+                >
+                  {c.short}
+                </span>
+              ))}
             </div>
           </div>
         </div>

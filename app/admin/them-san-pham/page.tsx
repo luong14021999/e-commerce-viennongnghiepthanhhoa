@@ -178,8 +178,12 @@ export default function AdminAddProductPage() {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Tên sản phẩm / dịch vụ <span className="text-red-500">*</span></label>
               <input type="text" value={form.name} onChange={(e) => setField("name", e.target.value)}
-                placeholder="VD: Tư vấn quy hoạch nông nghiệp, Lúa giống BC15..."
+                placeholder="VD: Giống cà chua thuần VNN 12 - gói 5g/100 hạt"
                 className={`w-full px-4 py-2.5 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-green-500 ${errors.name ? "border-red-400" : "border-gray-300"}`}/>
+              <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
+                💡 Nên ghi rõ <strong>loại</strong> (giống / thành phẩm) + <strong>quy cách</strong> (kích cỡ, trọng lượng, gói).<br/>
+                VD: "Giống cua xanh - kích cỡ 0,8–3 cm/con" · "Bò vàng bản địa Thanh Hoá - 160–300 kg/con"
+              </p>
               {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
             </div>
 

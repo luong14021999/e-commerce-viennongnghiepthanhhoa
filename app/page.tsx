@@ -70,6 +70,9 @@ export default async function HomePage() {
     .order("sold", { ascending: false });
 
   const allProducts = (productsData ?? []).map(dbRowToProduct);
+  const topSellingInstitute = allProducts
+    .filter((p) => p.sellerName === "Viện Nông Nghiệp Thanh Hóa")
+    .slice(0, 8);
   const businessProducts = allProducts.filter((p) => !!p.sellerId && p.sellerName !== "Viện Nông Nghiệp Thanh Hóa");
   const sellerIds = [
     ...new Set(businessProducts.map((p) => p.sellerId).filter(Boolean)),
@@ -188,6 +191,28 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Top selling — institute products, sorted by sold */}
+      {topSellingInstitute.length > 0 && (
+        <section className="bg-gradient-to-b from-amber-50 to-white py-6 border-y border-amber-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-base font-extrabold text-gray-900 uppercase tracking-wide flex items-center gap-2">
+                  <span>🏆</span> Top sản phẩm bán chạy của Viện
+                </h2>
+                <p className="text-xs text-gray-500 mt-0.5">Sản phẩm chủ lực, luôn có sẵn hàng</p>
+              </div>
+              <Link href="/san-pham?category=san-pham-vien" className="text-sm text-amber-700 font-semibold hover:text-amber-600 flex-shrink-0">Xem tất cả →</Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {topSellingInstitute.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Featured products — visible immediately */}
       {allProducts.length > 0 && (
