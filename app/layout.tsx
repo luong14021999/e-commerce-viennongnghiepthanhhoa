@@ -20,7 +20,7 @@ const geistSans = Geist({
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 const SITE_NAME = "Viện Nông Nghiệp Thanh Hóa";
 const DEFAULT_DESCRIPTION =
-  "Mua giống cây trồng, phân bón, thuốc BVTV và đặc sản Thanh Hóa trực tuyến. Chất lượng kiểm định, giao hàng toàn tỉnh.";
+  "Mua giống cây trồng, phân bón, thuốc BVTV và đặc sản Thanh Hóa trực tuyến. Chất lượng kiểm định, giao hàng toàn quốc.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

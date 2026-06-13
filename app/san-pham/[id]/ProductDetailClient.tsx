@@ -359,8 +359,7 @@ export default function ProductDetailClient({
                 <div className="mt-4 flex items-center gap-2 text-xs text-gray-500 bg-blue-50 rounded-lg px-3 py-2">
                   <span>🚚</span>
                   <span>
-                    Giao hàng nội thành Thanh Hóa trong 2–4 giờ. Ngoại tỉnh 3–5
-                    ngày.
+                    Giao hàng toàn quốc 2–5 ngày qua GHN, GHTK, Viettel Post, J&T, VNPost.
                   </span>
                 </div>
               </>
@@ -438,7 +437,7 @@ export default function ProductDetailClient({
                   {[
                     { icon: '✅', text: 'Hàng chính hãng 100%' },
                     { icon: '🔄', text: 'Đổi trả miễn phí nếu lỗi' },
-                    { icon: '🚚', text: 'Giao hàng toàn tỉnh' },
+                    { icon: '🚚', text: 'Giao hàng toàn quốc' },
                     { icon: '📞', text: 'Hỗ trợ kỹ thuật 24/7' },
                   ].map(item => (
                     <li

@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 
 const trustBadges = [
   { icon: "✅", title: "Hàng chính hãng", desc: "100% nguồn gốc rõ ràng" },
-  { icon: "🚚", title: "Giao hàng toàn tỉnh", desc: "Nội thành 2–4 giờ" },
+  { icon: "🚚", title: "Giao hàng toàn quốc", desc: "Qua GHN, GHTK, Viettel Post..." },
   { icon: "🔄", title: "Đổi trả 7 ngày", desc: "Miễn phí nếu lỗi sản xuất" },
   { icon: "📞", title: "Hỗ trợ 24/7", desc: "Kỹ sư tư vấn tận tâm" },
 ];
