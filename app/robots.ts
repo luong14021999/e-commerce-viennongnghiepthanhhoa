@@ -19,6 +19,8 @@ export default function robots(): MetadataRoute.Robots {
           "/don-hang",
           "/dang-nhap",
           "/dang-ky",
+          "/cung-cau/cua-toi",
+          "/cung-cau/dang-tin",
           "/api/",
         ],
       },

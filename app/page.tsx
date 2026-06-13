@@ -160,6 +160,39 @@ export default async function HomePage() {
         </div>
       </div>
 
+      {/* Cung – Cầu CTA strip */}
+      <section className="bg-gradient-to-r from-emerald-700 via-green-600 to-teal-600 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <span className="text-3xl sm:text-4xl">🤝</span>
+              <div>
+                <div className="font-extrabold text-base sm:text-lg leading-tight">
+                  Kết nối Cung – Cầu Nông sản
+                </div>
+                <div className="text-xs sm:text-sm text-white/80 leading-snug">
+                  Đăng tin mua – bán số lượng lớn · Hợp tác B2B · Không qua trung gian
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2 flex-shrink-0">
+              <Link
+                href="/cung-cau"
+                className="bg-white text-emerald-800 font-bold px-4 py-2 rounded-full text-sm hover:scale-105 transition-transform shadow"
+              >
+                Xem tin
+              </Link>
+              <Link
+                href="/cung-cau/dang-tin"
+                className="bg-white/10 hover:bg-white/20 border border-white/30 backdrop-blur-sm text-white font-bold px-4 py-2 rounded-full text-sm transition-colors hidden sm:inline-block"
+              >
+                ➕ Đăng tin
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Shopee-style category grid */}
       <section className="bg-white border-b border-gray-100 py-5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

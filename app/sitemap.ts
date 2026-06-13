@@ -8,9 +8,10 @@ export const revalidate = 3600;
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = await createClient();
 
-  const [{ data: products }, { data: profiles }] = await Promise.all([
+  const [{ data: products }, { data: profiles }, { data: marketPosts }] = await Promise.all([
     supabase.from("products").select("id, submitted_at").eq("status", "approved"),
     supabase.from("business_profiles").select("id"),
+    supabase.from("market_posts").select("id, updated_at").eq("status", "active"),
   ]);
 
   const now = new Date();
@@ -18,6 +19,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticUrls: MetadataRoute.Sitemap = [
     { url: SITE_URL, lastModified: now, changeFrequency: "daily", priority: 1.0 },
     { url: `${SITE_URL}/san-pham`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
+    { url: `${SITE_URL}/cung-cau`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
   ];
 
   const productUrls: MetadataRoute.Sitemap = (products ?? []).map((p) => ({
@@ -34,5 +36,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [...staticUrls, ...productUrls, ...storefrontUrls];
+  const marketPostUrls: MetadataRoute.Sitemap = (marketPosts ?? []).map((p) => ({
+    url: `${SITE_URL}/cung-cau/${p.id}`,
+    lastModified: p.updated_at ? new Date(p.updated_at) : now,
+    changeFrequency: "daily",
+    priority: 0.7,
+  }));
+
+  return [...staticUrls, ...productUrls, ...storefrontUrls, ...marketPostUrls];
 }

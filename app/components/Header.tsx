@@ -523,6 +523,9 @@ export default function Header() {
           <Link href="/san-pham" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700">
             🛒 Tất cả
           </Link>
+          <Link href="/cung-cau" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-50">
+            🤝 Kết nối Cung – Cầu
+          </Link>
           <p className="px-4 pt-2 pb-1 text-xs text-blue-500 font-semibold uppercase">Dịch vụ</p>
           {categories.filter(c => c.type === 'service').map(cat => (
             <Link key={cat.id} href={`/san-pham?category=${cat.id}`} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">

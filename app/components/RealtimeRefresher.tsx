@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-const TABLES = ["products", "product_images", "reviews", "business_profiles"] as const;
+const TABLES = ["products", "product_images", "reviews", "business_profiles", "market_posts"] as const;
 
 export default function RealtimeRefresher() {
   const router = useRouter();
